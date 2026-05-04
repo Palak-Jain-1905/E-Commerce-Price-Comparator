@@ -117,8 +117,8 @@ def get_driver(headless=False, disable_images=False):
 
     try:
         if os.environ.get('RAILWAY_ENVIRONMENT'):
-            chrome_options.binary_location = "/run/current-system/sw/bin/chromium"
-            service = Service("/run/current-system/sw/bin/chromedriver")
+            chrome_options.binary_location = "/nix/store/chromium/bin/chromium"
+            service = Service(ChromeDriverManager().install())
         else:
             service = Service(ChromeDriverManager().install())
 
@@ -778,12 +778,11 @@ def compare_prices(request):
     print(f"\n{'='*60}\n[DEBUG] Search: '{query}'\n{'='*60}")
 
     import os
-    driver = None
-    if not os.environ.get('RAILWAY_ENVIRONMENT'):
-        try:
-            driver = get_driver(headless=False, disable_images=False)
-        except Exception as e:
-            logger.exception("Driver init failed: %s", e)
+    try:
+        driver = get_driver(headless=False, disable_images=False)
+    except Exception as e:
+        logger.exception("Driver init failed: %s", e)
+        driver = None
 
     try:
     # Amazon uses requests (Railway pe bhi chalega)
