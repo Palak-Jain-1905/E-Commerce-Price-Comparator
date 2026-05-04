@@ -777,27 +777,37 @@ def compare_prices(request):
 
     print(f"\n{'='*60}\n[DEBUG] Search: '{query}'\n{'='*60}")
 
-    try:
-        driver = get_driver(headless=False, disable_images=False)
-    except Exception as e:
-        logger.exception("Driver init failed: %s", e)
-        return render(request, "index.htm", {"error": "WebDriver error. Check server logs."})
+    import os
+    driver = None
+    if not os.environ.get('RAILWAY_ENVIRONMENT'):
+        try:
+            driver = get_driver(headless=False, disable_images=False)
+        except Exception as e:
+            logger.exception("Driver init failed: %s", e)
 
     try:
-        # Amazon uses requests (no Selenium needed)
+    # Amazon uses requests (Railway pe bhi chalega)
         amazon_prices, amazon_reviews, amazon_discounts, amazon_links = get_amazon_prices(None, query)
-        rand_sleep()
-        flipkart_prices, flipkart_reviews, flipkart_discounts, flipkart_links = get_flipkart_prices(driver, query)
-        rand_sleep()
-        meesho_prices,   meesho_reviews,   meesho_discounts,   meesho_links   = get_meesho_prices(driver, query)
-        rand_sleep()
-        myntra_prices,   myntra_reviews,   myntra_discounts,   myntra_links   = get_myntra_prices(driver, query)
+
+        # Flipkart, Meesho, Myntra sirf local pe (Selenium chahiye)
+        if driver:
+            rand_sleep()
+            flipkart_prices, flipkart_reviews, flipkart_discounts, flipkart_links = get_flipkart_prices(driver, query)
+            rand_sleep()
+            meesho_prices,   meesho_reviews,   meesho_discounts,   meesho_links   = get_meesho_prices(driver, query)
+            rand_sleep()
+            myntra_prices,   myntra_reviews,   myntra_discounts,   myntra_links   = get_myntra_prices(driver, query)
+        else:
+            flipkart_prices, flipkart_reviews, flipkart_discounts, flipkart_links = {}, {}, {}, {}
+            meesho_prices,   meesho_reviews,   meesho_discounts,   meesho_links   = {}, {}, {}, {}
+            myntra_prices,   myntra_reviews,   myntra_discounts,   myntra_links   = {}, {}, {}, {}
     except Exception as e:
         logger.exception("Scraping error: %s", e)
         return render(request, "index.htm", {"error": "Scrape failed. Check server logs."})
     finally:
         try:
-            driver.quit()
+            if driver:
+                driver.quit()
         except Exception:
             pass
 
