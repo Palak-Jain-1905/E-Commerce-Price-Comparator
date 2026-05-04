@@ -269,317 +269,122 @@ def get_amazon_prices(driver, query):
 
 
 def get_flipkart_prices(driver, query):
+    """Flipkart scraper using requests + BeautifulSoup"""
     url = f"https://www.flipkart.com/search?q={query}"
-    print(f"\n[DEBUG] Flipkart: Loading {url}")
-    try:
-        driver.get(url)
-    except Exception as e:
-        print(f"[DEBUG] Flipkart: Page load FAILED — {e}")
-        logger.warning("Flipkart load issue: %s", e)
-
-    print(f"[DEBUG] Flipkart: Page title = '{driver.title}'")
-    rand_sleep()
-
+    print(f"\n[DEBUG] Flipkart (requests): Loading {url}")
     prices, reviews, discounts, links = {}, {}, {}, {}
-
     try:
-        close_btns = driver.find_elements(By.CSS_SELECTOR, "button._2KpZ6l._2doB4z")
-        if close_btns:
-            close_btns[0].click()
-            rand_sleep(0.4, 0.9)
-    except Exception:
-        pass
-
-    title_selectors = ["div._4rR01T", "a.s1Q9rs", "a._2UzuFa", "a.CGtC98", "div.KzDlHZ", "a.WKTcLC", "a.wjcEIp"]
-    card_selectors  = ["div[data-id]", "div.lvJbLV", "div._13oc-S", "div._1AtVbE", "div._75nlfW"]
-
-    title_nodes = []
-    for sel in title_selectors:
-        try:
-            found = driver.find_elements(By.CSS_SELECTOR, sel)
-            if found:
-                title_nodes = found
-                print(f"[DEBUG] Flipkart: Found {len(found)} titles with '{sel}'")
-                break
-        except Exception:
-            continue
-
-    for tnode in title_nodes[:MAX_ITEMS]:
-        try:
-            title = safe_text(tnode)
-            if not title or is_fake_title(title):
-                continue
-
-            link = "#"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-IN,en;q=0.9",
+        }
+        resp = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        cards = soup.select("div._75nlfW, div.tUxRFH, div._1AtVbE")
+        print(f"[DEBUG] Flipkart: Found {len(cards)} cards")
+        for card in cards[:MAX_ITEMS]:
             try:
-                if tnode.tag_name.lower() == "a":
-                    link = tnode.get_attribute("href") or "#"
-                else:
-                    try:
-                        link = tnode.find_element(By.XPATH, "./ancestor::a").get_attribute("href")
-                    except Exception:
-                        link = "#"
-            except Exception:
-                link = "#"
-
-            parent = None
-            try:
-                parent = tnode.find_element(By.XPATH, "./ancestor::div[contains(@class,'_1AtVbE') or contains(@class,'_13oc-S') or contains(@class,'_2kHMtA') or contains(@class,'_75nlfW')]")
-            except Exception:
-                try:
-                    parent = tnode.find_element(By.XPATH, "./ancestor::div[3]")
-                except Exception:
-                    parent = None
-
-            price         = None
-            rating_text   = "No reviews"
-            discount_text = "No discount"
-
-            if parent is not None:
-                try:
-                    try:
-                        price_text = safe_text(parent.find_element(By.CSS_SELECTOR, "div._30jeq3._1_WHN1"))
-                    except Exception:
-                        try:
-                            price_text = safe_text(parent.find_element(By.CSS_SELECTOR, "div._30jeq3"))
-                        except Exception:
-                            price_text = safe_text(parent.find_element(By.CSS_SELECTOR, "div.Nx9bqj"))
-                    price = safe_int(price_text)
-                except Exception:
-                    price = None
-
-                try:
-                    rating_text = safe_text(parent.find_element(
-                        By.CSS_SELECTOR, "div._3LWZlK, span._2_R_DZ, div.XQDdHH, div.ipqd2A"
-                    )) or "No reviews"
-                except Exception:
-                    rating_text = "No reviews"
-
-                try:
-                    discount_text = safe_text(parent.find_element(
-                        By.CSS_SELECTOR, "div._3Ay6Sb, div.UkUFwK"
-                    )) or "No discount"
-                except Exception:
-                    discount_text = "No discount"
-
-            prices[title]    = price
-            reviews[title]   = rating_text
-            discounts[title] = discount_text
-            links[title]     = link
-        except Exception:
-            continue
-
-    if len(prices) < 3:
-        try:
-            fallback_cards = driver.find_elements(By.CSS_SELECTOR, ",".join(card_selectors))
-            for card in fallback_cards[:MAX_ITEMS]:
-                try:
-                    title = ""
-                    link  = "#"
-                    try:
-                        title_el = card.find_element(
-                            By.CSS_SELECTOR, "a.fb4uj3, a.CGtC98, a.s1Q9rs, a._2UzuFa, div._4rR01T, div.KzDlHZ, a.WKTcLC"
-                        )
-                        title = safe_text(title_el)
-                        if title_el.tag_name.lower() == "a":
-                            link = title_el.get_attribute("href") or "#"
-                    except Exception:
-                        title = safe_text(card.text).split("\n")[0] if card.text else ""
-                    if not title or is_fake_title(title):
-                        continue
-
-                    try:
-                        price = safe_int(safe_text(card.find_element(By.CSS_SELECTOR, "div._30jeq3, div.Nx9bqj")))
-                    except Exception:
-                        price = None
-
-                    try:
-                        rating_text = safe_text(card.find_element(By.CSS_SELECTOR, "div.XQDdHH, div._3LWZlK, div.ipqd2A")) or "No reviews"
-                    except Exception:
-                        rating_text = "No reviews"
-
-                    try:
-                        discount_text = safe_text(card.find_element(By.CSS_SELECTOR, "div.UkUFwK, div._3Ay6Sb")) or "No discount"
-                    except Exception:
-                        discount_text = "No discount"
-
-                    prices[title]    = price
-                    reviews[title]   = rating_text
-                    discounts[title] = discount_text
-                    links[title]     = link
-                except Exception:
+                title_el = card.select_one("div.KzDlHZ, a.WKTcLC, div._4rR01T, a.s1Q9rs")
+                if not title_el:
                     continue
-        except Exception:
-            pass
-
+                title = title_el.get_text(strip=True)
+                if not title or is_fake_title(title):
+                    continue
+                price_el = card.select_one("div.Nx9bqj, div._30jeq3")
+                price = safe_int(price_el.get_text(strip=True)) if price_el else None
+                link_el = card.select_one("a")
+                link = "https://www.flipkart.com" + link_el["href"] if link_el and link_el.get("href") else "#"
+                disc_el = card.select_one("div.UkUFwK, div._3Ay6Sb")
+                discount = disc_el.get_text(strip=True) if disc_el else "No discount"
+                rat_el = card.select_one("div.XQDdHH, div._3LWZlK")
+                rating = rat_el.get_text(strip=True) if rat_el else "No reviews"
+                prices[title] = price
+                links[title] = link
+                discounts[title] = discount
+                reviews[title] = rating
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"[DEBUG] Flipkart requests failed: {e}")
     print(f"[DEBUG] Flipkart: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
 
 def get_meesho_prices(driver, query):
+    """Meesho scraper using requests + BeautifulSoup"""
     url = f"https://www.meesho.com/search?q={query}"
-    print(f"\n[DEBUG] Meesho: Loading {url}")
-    try:
-        driver.get(url)
-    except Exception as e:
-        print(f"[DEBUG] Meesho: Page load FAILED — {e}")
-        logger.warning("Meesho load issue: %s", e)
-
-    print(f"[DEBUG] Meesho: Page title = '{driver.title}'")
-    time.sleep(3)
-
+    print(f"\n[DEBUG] Meesho (requests): Loading {url}")
     prices, reviews, discounts, links = {}, {}, {}, {}
-
-    selectors = [
-        "div.NewProductCardstyled__CardStyled-sc-6y2tys-0",
-        "div.sc-bqiRlB",
-        "div._2fHF2F",
-        "div.sc-cQxSaf",
-        "div.productCard",
-        "div[data-testid='product-card']",
-    ]
-
-    containers = []
-    for sel in selectors:
-        try:
-            found = driver.find_elements(By.CSS_SELECTOR, sel)
-            if found:
-                containers = found
-                print(f"[DEBUG] Meesho: Found {len(found)} containers with '{sel}'")
-                break
-        except Exception:
-            continue
-
-    for card in containers[:MAX_ITEMS]:
-        try:
-            title = None
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-IN,en;q=0.9",
+        }
+        resp = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        cards = soup.select("div.sc-bqiRlB, div.NewProductCardstyled__CardStyled-sc-6y2tys-0")
+        print(f"[DEBUG] Meesho: Found {len(cards)} cards")
+        for card in cards[:MAX_ITEMS]:
             try:
-                title = safe_text(card.find_element(By.CSS_SELECTOR, "p, h3, div.card-title"))
-            except Exception:
-                try:
-                    title = safe_text(card.find_element(By.TAG_NAME, "a"))
-                except Exception:
-                    title = None
-
-            if not title or is_fake_title(title):
-                continue
-
-            price = None
-            try:
-                try:
-                    price_text = safe_text(card.find_element(By.CSS_SELECTOR, "h5"))
-                except Exception:
-                    try:
-                        price_text = safe_text(card.find_element(By.CSS_SELECTOR, "span.price"))
-                    except Exception:
-                        price_text = safe_text(card.text)
-                price = safe_int(price_text)
-            except Exception:
-                price = None
-
-            try:
-                a    = card.find_element(By.TAG_NAME, "a")
-                link = a.get_attribute("href") or "#"
-                if link and not link.startswith("http"):
+                title_el = card.select_one("p, h3")
+                if not title_el:
+                    continue
+                title = title_el.get_text(strip=True)
+                if not title or is_fake_title(title):
+                    continue
+                price_el = card.select_one("h5, span.price")
+                price = safe_int(price_el.get_text(strip=True)) if price_el else None
+                link_el = card.select_one("a")
+                link = link_el["href"] if link_el and link_el.get("href") else "#"
+                if link != "#" and not link.startswith("http"):
                     link = "https://www.meesho.com" + link
+                prices[title] = price
+                links[title] = link
+                discounts[title] = "No discount"
+                reviews[title] = "No reviews"
             except Exception:
-                link = "#"
-
-            try:
-                rev          = safe_text(card.find_element(By.CSS_SELECTOR, ".rating"))
-                reviews_text = rev if rev else "No reviews"
-            except Exception:
-                reviews_text = "No reviews"
-
-            try:
-                disc           = safe_text(card.find_element(By.CSS_SELECTOR, ".offer, .discount, span.off"))
-                discounts_text = disc if disc else "No discount"
-            except Exception:
-                discounts_text = "No discount"
-
-            prices[title]    = price
-            reviews[title]   = reviews_text
-            discounts[title] = discounts_text
-            links[title]     = link
-        except Exception:
-            continue
-
+                continue
+    except Exception as e:
+        print(f"[DEBUG] Meesho requests failed: {e}")
     print(f"[DEBUG] Meesho: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
 
 def get_myntra_prices(driver, query):
+    """Myntra scraper using requests + BeautifulSoup"""
     url = f"https://www.myntra.com/{query}"
-    print(f"\n[DEBUG] Myntra: Loading {url}")
-    try:
-        driver.get(url)
-    except Exception as e:
-        print(f"[DEBUG] Myntra: Page load FAILED — {e}")
-        logger.warning("Myntra load issue: %s", e)
-
-    print(f"[DEBUG] Myntra: Page title = '{driver.title}'")
-    rand_sleep()
-
+    print(f"\n[DEBUG] Myntra (requests): Loading {url}")
     prices, reviews, discounts, links = {}, {}, {}, {}
-
-    card_selectors = ["li.product-base", "div.product-base", "li.product-base._3a3A6"]
-    cards = []
-    for sel in card_selectors:
-        try:
-            found = driver.find_elements(By.CSS_SELECTOR, sel)
-            if found:
-                cards = found
-                print(f"[DEBUG] Myntra: Found {len(found)} cards with '{sel}'")
-                break
-        except Exception:
-            continue
-
-    for card in cards[:MAX_ITEMS]:
-        try:
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-IN,en;q=0.9",
+        }
+        resp = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        cards = soup.select("li.product-base")
+        print(f"[DEBUG] Myntra: Found {len(cards)} cards")
+        for card in cards[:MAX_ITEMS]:
             try:
-                brand = safe_text(card.find_element(By.CLASS_NAME, "product-brand"))
+                brand = card.select_one(".product-brand")
+                name = card.select_one(".product-product")
+                title = f"{brand.get_text(strip=True) if brand else ''} {name.get_text(strip=True) if name else ''}".strip()
+                if not title or is_fake_title(title):
+                    continue
+                price_el = card.select_one(".product-discountedPrice, .product-price")
+                price = safe_int(price_el.get_text(strip=True)) if price_el else None
+                link_el = card.select_one("a")
+                link = "https://www.myntra.com/" + link_el["href"] if link_el and link_el.get("href") else "#"
+                disc_el = card.select_one(".product-discountPercentage")
+                discount = disc_el.get_text(strip=True) if disc_el else "No discount"
+                prices[title] = price
+                links[title] = link
+                discounts[title] = discount
+                reviews[title] = "No reviews"
             except Exception:
-                brand = ""
-            try:
-                name = safe_text(card.find_element(By.CLASS_NAME, "product-product"))
-            except Exception:
-                try:
-                    name = safe_text(card.find_element(By.CSS_SELECTOR, "h3, p"))
-                except Exception:
-                    name = card.text.split("\n")[0] if card.text else ""
-            title = f"{brand} {name}".strip()
-            if not title or is_fake_title(title):
                 continue
-
-            try:
-                price_text = safe_text(card.find_element(By.CSS_SELECTOR, ".product-discountedPrice, .product-price"))
-                price = safe_int(price_text)
-            except Exception:
-                price = None
-
-            try:
-                link = card.find_element(By.TAG_NAME, "a").get_attribute("href") or "#"
-            except Exception:
-                link = "#"
-
-            try:
-                disc = safe_text(card.find_element(By.CLASS_NAME, "product-discountPercentage")) or "No discount"
-            except Exception:
-                disc = "No discount"
-
-            try:
-                rev          = safe_text(card.find_element(By.CSS_SELECTOR, ".product-rating"))
-                reviews_text = rev if rev else "No reviews"
-            except Exception:
-                reviews_text = "No reviews"
-
-            prices[title]    = price
-            discounts[title] = disc
-            reviews[title]   = reviews_text
-            links[title]     = link
-        except Exception:
-            continue
-
+    except Exception as e:
+        print(f"[DEBUG] Myntra requests failed: {e}")
     print(f"[DEBUG] Myntra: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
