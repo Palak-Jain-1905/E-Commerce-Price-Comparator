@@ -1,1 +1,1 @@
-web: gunicorn price_comparator.wsgi --log-file - --bind 0.0.0.0:$PORT
+web: python manage.py migrate && gunicorn price_comparator.wsgi --log-file - --bind 0.0.0.0:$PORT
