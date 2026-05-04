@@ -94,9 +94,9 @@ def is_fake_title(title):
 
 
 def get_driver(headless=False, disable_images=False):
+    import os
     chrome_options = Options()
-    if headless:
-        chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -114,9 +114,15 @@ def get_driver(headless=False, disable_images=False):
     if disable_images:
         prefs = {"profile.managed_default_content_settings.images": 2}
         chrome_options.add_experimental_option("prefs", prefs)
+
     try:
-        service = Service(ChromeDriverManager().install())
-        driver  = webdriver.Chrome(service=service, options=chrome_options)
+        if os.environ.get('RAILWAY_ENVIRONMENT'):
+            chrome_options.binary_location = "/run/current-system/sw/bin/chromium"
+            service = Service("/run/current-system/sw/bin/chromedriver")
+        else:
+            service = Service(ChromeDriverManager().install())
+
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.execute_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         )
