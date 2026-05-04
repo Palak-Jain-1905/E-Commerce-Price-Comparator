@@ -1,0 +1,513 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Price Comparator — Shop Anything</title>
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0d6efd" />
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Bootstrap + Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <style>
+      :root {
+        --bg: #0b1220;
+        --surface: rgba(255, 255, 255, 0.06);
+        --surface-2: rgba(255, 255, 255, 0.1);
+        --glass: rgba(255, 255, 255, 0.08);
+        --glass-border: rgba(255, 255, 255, 0.14);
+        --text: #e7ecf3;
+        --muted: #a8b3c7;
+        --brand: #0d6efd;
+        --brand-2: #5b9dff;
+        --ok: #14b8a6;
+        --warn: #f59e0b;
+        --danger: #ef4444;
+      }
+      [data-theme="light"] {
+        --bg: #f6f9ff;
+        --surface: rgba(255, 255, 255, 0.8);
+        --surface-2: rgba(255, 255, 255, 0.9);
+        --glass: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(0, 0, 0, 0.08);
+        --text: #0b1220;
+        --muted: #50607a;
+      }
+
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, "Poppins", sans-serif;
+        overflow-x: hidden;
+      }
+
+      .bg-video {
+        position: fixed; inset: 0; width: 100%; height: 100%;
+        object-fit: cover; z-index: -3;
+        filter: saturate(1.05) contrast(1.05) brightness(0.55);
+      }
+      .bg-overlay {
+        position: fixed; inset: 0; z-index: -2;
+        background: radial-gradient(1000px 600px at 10% 15%, rgba(13,110,253,0.35), transparent 60%),
+          radial-gradient(800px 500px at 90% 10%, rgba(99,102,241,0.28), transparent 60%),
+          linear-gradient(180deg, rgba(6,10,20,0.7), rgba(6,10,20,0.9));
+        backdrop-filter: blur(2px);
+      }
+      [data-theme="light"] .bg-overlay {
+        background: radial-gradient(1000px 600px at 10% 15%, rgba(13,110,253,0.12), transparent 60%),
+          radial-gradient(800px 500px at 90% 10%, rgba(99,102,241,0.1), transparent 60%),
+          linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.85));
+      }
+
+      .navbar {
+        backdrop-filter: blur(8px);
+        background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0)) !important;
+      }
+      [data-theme="light"] .navbar {
+        background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0)) !important;
+      }
+      .brand { font-family: "Poppins", sans-serif; font-weight: 700; letter-spacing: 0.2px; }
+      .brand .accent {
+        background: linear-gradient(90deg, var(--brand), var(--brand-2));
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+
+      .hero { min-height: 88vh; display: flex; align-items: center; padding: 64px 0 32px; }
+      .hero h1 { font-family: "Poppins", sans-serif; font-weight: 800; }
+
+      .glass {
+        background: var(--glass); border: 1px solid var(--glass-border);
+        border-radius: 18px; backdrop-filter: blur(12px);
+        box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+      }
+      .search-card { max-width: 1000px; margin: 0 auto; padding: 18px; }
+
+      .filters-row { gap: 0.8rem; }
+      .filters-row .form-select {
+        min-width: 220px; border-radius: 12px;
+        background: rgba(255,255,255,0.95); border: 0; color: #111;
+      }
+      [data-theme="light"] .filters-row .form-select { background: #fff; }
+
+      .input-group-lg > .form-control.search-input {
+        background: rgba(255,255,255,0.98); border: 0; border-radius: 12px;
+        color: #111; box-shadow: 0 1px 0 rgba(0,0,0,0.05) inset;
+      }
+      .input-group-lg > .form-control.search-input:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25);
+      }
+      .btn-primary {
+        border-radius: 12px; border: 0;
+        background: linear-gradient(135deg, var(--brand), var(--brand-2));
+        box-shadow: 0 8px 24px rgba(13,110,253,0.35);
+      }
+      .btn-icon { border-radius: 12px; background: rgba(255,255,255,0.92); border: 0; color: #111; }
+      .btn-icon.active-mic { background: #dc3545; color: #fff; }
+
+      .input-wrap { position: relative; }
+      .clear-btn {
+        position: absolute; right: 138px; top: 50%; transform: translateY(-50%);
+        background: transparent; border: 0; color: #6b7280; display: none;
+      }
+      .clear-btn.show { display: block; }
+      .suggestions {
+        position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+        background: #fff; color: #0b1220; border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+        z-index: 10; display: none; overflow: hidden;
+      }
+      .suggestions.show { display: block; }
+      .suggestions .item {
+        padding: 0.7rem 1rem; display: flex; align-items: center;
+        gap: 0.5rem; cursor: pointer;
+      }
+      .suggestions .item:hover, .suggestions .item.active { background: #eef4ff; }
+      .suggestions .match { color: #0d6efd; font-weight: 600; }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+      .chip {
+        padding: 0.45rem 0.85rem; border-radius: 999px; font-size: 0.9rem;
+        user-select: none; cursor: pointer; color: #fff;
+        background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.12));
+        border: 1px solid rgba(255,255,255,0.28); transition: 0.18s ease;
+      }
+      .chip:hover { transform: translateY(-1px); background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.18)); }
+
+      .feature {
+        background: var(--surface); border: 1px solid var(--glass-border);
+        border-radius: 16px; text-align: center; padding: 22px 18px; height: 100%;
+      }
+      .feature i { font-size: 28px; color: #ffd166; }
+
+      footer { border-top: 1px dashed rgba(255,255,255,0.18); }
+      [data-theme="light"] footer { border-top: 1px dashed rgba(0,0,0,0.15); }
+
+      @media (max-width: 576px) {
+        .filters-row .form-select { min-width: unset; width: 100%; }
+        .clear-btn { right: 132px; }
+      }
+    </style>
+  </head>
+  <body>
+    <video class="bg-video" preload="metadata" autoplay muted loop playsinline aria-hidden="true" disablepictureinpicture>
+      <source src="{% static 'online.mp4' %}" type="video/mp4" />
+    </video>
+    <div class="bg-overlay"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top pt-2">
+      <div class="container">
+        <a class="navbar-brand brand" href="{% url 'welcome' %}">
+          <i class="bi bi-bag-check-fill me-2 text-primary"></i>
+          <span class="accent">Price</span> Comparator
+        </a>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <button id="themeToggle" class="btn btn-outline-light btn-sm" type="button" aria-label="Toggle theme">
+            <i class="bi bi-moon-stars"></i>
+          </button>
+          <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#howItWorks">
+            <i class="bi bi-question-circle"></i>
+          </button>
+          {% if user.is_authenticated %}
+          <a class="btn btn-outline-light btn-sm" href="{% url 'logout' %}">Logout</a>
+          {% else %}
+          <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}?next={% url 'search' %}">Login</a>
+          <a class="btn btn-primary btn-sm" href="{% url 'signup' %}?next={% url 'search' %}">Sign up</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- Offcanvas -->
+    <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="howItWorks" aria-labelledby="howItWorksLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="howItWorksLabel">How it works</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body small">
+        <ol>
+          <li>Choose a category (optional).</li>
+          <li>Type a product and press Enter or click Search.</li>
+          <li>Use the mic for voice search.</li>
+          <li>We compare prices across stores and show best deals.</li>
+        </ol>
+        <p class="text-white-50 mb-0">Tip: Press / or Ctrl + K to focus the search bar.</p>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container text-center">
+        <h1 class="display-5 fw-bold mb-2">
+          Compare Prices on <span class="accent">Anything</span>
+        </h1>
+        <p class="lead text-white-50 mb-4">
+          Electronics • Fashion • Home & Kitchen • Beauty • Sports • More
+        </p>
+
+        <!-- Search Card -->
+        <div class="search-card glass">
+          <div class="d-flex flex-wrap filters-row mb-3">
+            <select id="categorySelect" class="form-select form-select-lg" aria-label="Select category">
+              <option value="all" selected>All Categories</option>
+              <option value="electronics">Electronics</option>
+              <option value="fashion">Fashion</option>
+              <option value="home_kitchen">Home & Kitchen</option>
+              <option value="beauty">Beauty & Personal Care</option>
+              <option value="sports">Sports & Fitness</option>
+              <option value="books">Books</option>
+              <option value="appliances">Appliances</option>
+              <option value="toys">Toys & Games</option>
+              <option value="grocery">Grocery</option>
+            </select>
+          </div>
+
+          <form id="compareForm" method="GET" action="{% url 'loading' %}" role="search" novalidate>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text bg-transparent border-0 ps-0">
+                <i class="bi bi-search text-primary fs-4"></i>
+              </span>
+              <div class="input-wrap flex-grow-1">
+                <input type="text" id="searchInput" name="q"
+                  class="form-control form-control-lg search-input"
+                  placeholder="Search anything: iPhone 15, running shoes, air fryer..."
+                  autocomplete="off" required
+                  aria-controls="suggestions" aria-expanded="false"
+                />
+                <button type="button" class="clear-btn" id="clearBtn" aria-label="Clear search">
+                  <i class="bi bi-x-circle-fill fs-5"></i>
+                </button>
+                <div id="suggestions" class="suggestions" role="listbox" aria-label="Suggestions"></div>
+              </div>
+              <button type="button" id="micBtn" class="btn btn-icon px-3" title="Voice search">
+                <i class="bi bi-mic-fill"></i>
+              </button>
+              <button id="searchBtn" type="submit" class="btn btn-primary px-4">
+                <span class="btn-label">Search</span>
+              </button>
+            </div>
+
+            {% if error %}
+            <p class="mt-3 mb-0 text-danger fw-semibold" id="serverError">{{ error }}</p>
+            {% else %}
+            <p class="mt-3 mb-0 text-white-50 small">Tip: Press / or Ctrl + K to focus search. Use mic for voice search.</p>
+            {% endif %}
+          </form>
+
+          <div class="chips mt-4">
+            <span class="chip" data-q="smartphone">Smartphones</span>
+            <span class="chip" data-q="laptop">Laptops</span>
+            <span class="chip" data-q="headphones">Headphones</span>
+            <span class="chip" data-q="running shoes">Shoes</span>
+            <span class="chip" data-q="refrigerator">Refrigerators</span>
+            <span class="chip" data-q="makeup kit">Makeup</span>
+            <span class="chip" data-q="gaming console">Gaming</span>
+            <span class="chip" data-q="harry potter book">Books</span>
+            <span class="chip" data-q="fitness band">Fitness</span>
+          </div>
+
+          <div class="text-center">
+            <div class="text-white-50 small mt-3">Recent searches</div>
+            <div id="recentChips" class="chips mt-2"></div>
+          </div>
+        </div>
+
+        <!-- Features -->
+        <div class="row g-4 mt-5 justify-content-center">
+          <div class="col-12 col-md-4">
+            <div class="feature">
+              <i class="bi bi-bag-heart"></i>
+              <h6 class="mt-2 mb-1 fw-bold">Search Anything</h6>
+              <p class="mb-0 text-white-75">Not just phones — compare prices for any product.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="feature">
+              <i class="bi bi-graph-up-arrow"></i>
+              <h6 class="mt-2 mb-1 fw-bold">Smart Comparison</h6>
+              <p class="mb-0 text-white-75">See prices across stores and find the best deal.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="feature">
+              <i class="bi bi-cash-coin"></i>
+              <h6 class="mt-2 mb-1 fw-bold">Save Money</h6>
+              <p class="mb-0 text-white-75">Transparent comparisons with quick search.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center text-white-50 small py-4">
+      <div class="container">© <span id="year"></span> Price Comparator. All rights reserved.</div>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      <div id="msgToast" class="toast text-bg-dark align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body" id="toastBody">Message</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      (function () {
+        const root = document.documentElement;
+        const btn = document.getElementById("themeToggle");
+        const saved = localStorage.getItem("pc-theme");
+        if (saved) { root.setAttribute("data-theme", saved); updateIcon(saved); }
+        function updateIcon(theme) {
+          btn.innerHTML = theme === "light" ? '<i class="bi bi-sun-fill"></i>' : '<i class="bi bi-moon-stars"></i>';
+        }
+        btn.addEventListener("click", () => {
+          const current = root.getAttribute("data-theme") || "dark";
+          const next = current === "dark" ? "light" : "dark";
+          root.setAttribute("data-theme", next);
+          localStorage.setItem("pc-theme", next);
+          updateIcon(next);
+        });
+      })();
+
+      const form = document.getElementById("compareForm");
+      const input = document.getElementById("searchInput");
+      const searchBtn = document.getElementById("searchBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const micBtn = document.getElementById("micBtn");
+      const chips = document.querySelectorAll(".chip");
+      const recentChips = document.getElementById("recentChips");
+      const suggestionsEl = document.getElementById("suggestions");
+      const toast = bootstrap.Toast.getOrCreateInstance(document.getElementById("msgToast"));
+      const toastBody = document.getElementById("toastBody");
+
+      const showToast = (msg) => { toastBody.textContent = msg; toast.show(); };
+
+      // ✅ FIX: Central redirect function — sab jagah yahi use hoga
+      const goSearch = (query) => {
+        const q = query.trim();
+        if (!q || q.length < 2) { showToast("Please enter at least 2 characters."); input.focus(); return; }
+        saveRecent(q);
+        window.location.href = "/loading/?q=" + encodeURIComponent(q);
+      };
+
+      window.addEventListener("keydown", (e) => {
+        const slash = e.key === "/" && !["INPUT","TEXTAREA"].includes(document.activeElement.tagName);
+        const cmdK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k";
+        if (slash || cmdK) { e.preventDefault(); input.focus(); input.select(); }
+      });
+
+      const placeholders = [
+        "Search anything: iPhone 15, running shoes, air fryer...",
+        "Try: bluetooth speaker, smart watch, gaming laptop",
+        "Looking for: coffee maker, sofa, DSLR camera",
+      ];
+      let phIndex = 0;
+      setInterval(() => {
+        phIndex = (phIndex + 1) % placeholders.length;
+        input.setAttribute("placeholder", placeholders[phIndex]);
+      }, 5000);
+
+      // ✅ FIX: Chips ab loading page pe jayenge
+      chips.forEach((c) => c.addEventListener("click", () => {
+        goSearch(c.getAttribute("data-q"));
+      }));
+
+      const LS_KEY = "pc-recent-searches";
+      const getRecent = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } };
+      const saveRecent = (term) => {
+        const arr = getRecent().filter((x) => x.toLowerCase() !== term.toLowerCase());
+        arr.unshift(term);
+        localStorage.setItem(LS_KEY, JSON.stringify(arr.slice(0, 10)));
+      };
+      const renderRecent = () => {
+        const arr = getRecent();
+        recentChips.innerHTML = "";
+        if (!arr.length) return;
+        arr.forEach((t) => {
+          const el = document.createElement("span");
+          el.className = "chip"; el.textContent = t; el.title = "Search " + t;
+          // ✅ FIX: Recent chips bhi loading page pe jayenge
+          el.addEventListener("click", () => { goSearch(t); });
+          recentChips.appendChild(el);
+        });
+      };
+      renderRecent();
+
+      const SUGGESTIONS = [
+        "iphone 15","samsung galaxy s24","pixel 9","air fryer","running shoes",
+        "smart watch","wireless earbuds","dslr camera","mirrorless camera",
+        "gaming laptop","laptop stand","mechanical keyboard","bluetooth speaker",
+        "smart tv","washing machine","refrigerator","microwave oven","sofa",
+        "office chair","perfume","makeup kit","hair dryer","harry potter book",
+        "protein powder","football","cricket bat","lego set","coffee maker",
+        "water purifier","power bank",
+      ];
+      let activeIndex = -1;
+      const highlightMatch = (text, q) => {
+        const i = text.toLowerCase().indexOf(q.toLowerCase());
+        if (i === -1) return text;
+        return text.slice(0, i) + '<span class="match">' + text.slice(i, i + q.length) + "</span>" + text.slice(i + q.length);
+      };
+      const buildSuggestions = (q) => {
+        suggestionsEl.innerHTML = ""; activeIndex = -1;
+        if (!q || q.trim().length < 2) { suggestionsEl.classList.remove("show"); return; }
+        const rec = getRecent().filter((x) => x.toLowerCase().includes(q.toLowerCase()));
+        const base = SUGGESTIONS.filter((x) => x.toLowerCase().includes(q.toLowerCase()));
+        const all = [...new Set([...rec, ...base])].slice(0, 8);
+        if (!all.length) { suggestionsEl.classList.remove("show"); return; }
+        all.forEach((t, idx) => {
+          const div = document.createElement("div");
+          div.className = "item"; div.role = "option"; div.id = "sugg-" + idx;
+          div.innerHTML = '<i class="bi bi-search text-primary"></i> <span>' + highlightMatch(t, q) + "</span>";
+          // ✅ FIX: Suggestions bhi loading page pe jayenge
+          div.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            suggestionsEl.classList.remove("show");
+            goSearch(t);
+          });
+          suggestionsEl.appendChild(div);
+        });
+        suggestionsEl.classList.add("show");
+      };
+      input.addEventListener("input", () => { clearBtn.classList.toggle("show", !!input.value); buildSuggestions(input.value); });
+      input.addEventListener("focus", () => buildSuggestions(input.value));
+      input.addEventListener("blur", () => setTimeout(() => suggestionsEl.classList.remove("show"), 120));
+      input.addEventListener("keydown", (e) => {
+        const items = Array.from(suggestionsEl.querySelectorAll(".item"));
+        if (!items.length) return;
+        if (e.key === "ArrowDown") { e.preventDefault(); activeIndex = (activeIndex + 1) % items.length; }
+        else if (e.key === "ArrowUp") { e.preventDefault(); activeIndex = (activeIndex - 1 + items.length) % items.length; }
+        else if (e.key === "Enter" && activeIndex >= 0) { e.preventDefault(); items[activeIndex].dispatchEvent(new Event("mousedown")); }
+        items.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+      });
+
+      clearBtn.addEventListener("click", () => { input.value = ""; clearBtn.classList.remove("show"); input.focus(); buildSuggestions(""); });
+
+      // ✅ FIX: Form submit bhi goSearch use karta hai
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        goSearch(input.value);
+      });
+
+      (function () {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { micBtn.disabled = true; micBtn.title = "Voice search not supported"; return; }
+        const recognition = new SR();
+        recognition.lang = "en-US"; recognition.interimResults = false; recognition.maxAlternatives = 1;
+        let listening = false;
+        const setMic = (on) => {
+          listening = on; micBtn.classList.toggle("active-mic", on);
+          micBtn.innerHTML = on ? '<i class="bi bi-stop-fill"></i>' : '<i class="bi bi-mic-fill"></i>';
+        };
+        micBtn.addEventListener("click", () => {
+          if (listening) { recognition.stop(); return; }
+          try { recognition.start(); setMic(true); } catch (e) {}
+        });
+        // ✅ FIX: Voice search bhi loading page pe jayega
+        recognition.addEventListener("result", (e) => {
+          const t = e.results[0][0].transcript;
+          input.value = t; clearBtn.classList.add("show");
+          buildSuggestions(t);
+          setTimeout(() => goSearch(t), 120);
+        });
+        recognition.addEventListener("end", () => setMic(false));
+        recognition.addEventListener("error", (e) => { setMic(false); showToast("Voice error: " + (e.error || "try again")); });
+      })();
+
+      const video = document.querySelector(".bg-video");
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        video.removeAttribute("autoplay"); try { video.pause(); } catch {}
+      }
+
+      (function () {
+        const el = document.getElementById("serverError");
+        if (el) showToast(el.textContent.trim());
+      })();
+    </script>
+  </body>
+</html>

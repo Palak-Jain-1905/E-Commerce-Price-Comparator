@@ -1,0 +1,592 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ product.title }} | PriceMatchX</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <style>
+    :root{
+      --bg:#0b1220; --text:#e6eef7; --muted:#9badc9;
+      --glass:rgba(255,255,255,0.06); --glass-border:rgba(255,255,255,0.14);
+      --accent-a:#7c3aed; --accent-b:#0ea5e9; --success:#22c55e;
+    }
+    body{ background:var(--bg); color:var(--text); font-family:"Inter",sans-serif; margin:0; }
+
+    /* Animated bg */
+    body::before{
+      content:''; position:fixed; inset:0; z-index:-1;
+      background:
+        radial-gradient(800px 600px at 10% 20%, rgba(124,58,237,0.12), transparent 60%),
+        radial-gradient(700px 500px at 90% 10%, rgba(14,165,233,0.1), transparent 60%);
+    }
+
+    #topNav{
+      background: rgba(0,0,0,0.35) !important;
+      backdrop-filter: blur(8px);
+    }
+    .brand-accent{
+      background: linear-gradient(90deg,var(--accent-a),var(--accent-b));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+
+    .glass{
+      background:var(--glass); border:1px solid var(--glass-border);
+      border-radius:16px; backdrop-filter:blur(12px); padding:22px;
+    }
+
+    .title-grad{
+      background: linear-gradient(90deg,var(--accent-a),var(--accent-b));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      font-weight:800; font-size:1.5rem; line-height:1.3;
+    }
+
+    .prod-img{
+      width:100%; max-height:280px; object-fit:contain;
+      border-radius:12px; background:rgba(255,255,255,0.04); padding:12px;
+    }
+    .img-placeholder{
+      width:100%; height:200px; border-radius:12px;
+      background:rgba(255,255,255,0.04); border:1px solid var(--glass-border);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--muted); font-size:3rem;
+    }
+
+    /* Offer table */
+    .table{ color:var(--text); }
+    .table thead th{
+      background:#111a2f; color:var(--text);
+      font-weight:700; border-color:var(--glass-border);
+    }
+    .table tbody td{ border-color:var(--glass-border); vertical-align:middle; }
+    .table tbody tr:hover{ background:rgba(255,255,255,0.04); }
+    .cheapest-row{ outline:2px solid var(--success); background:rgba(34,197,94,0.08) !important; }
+
+    .price-big{ font-size:1.15rem; font-weight:800; }
+    .store-badge{
+      display:inline-block; padding:3px 10px; border-radius:999px;
+      font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+    }
+    .store-amazon  { background:#ff9900; color:#000; }
+    .store-flipkart{ background:#2874f0; color:#fff; }
+    .store-meesho  { background:#f43397; color:#fff; }
+    .store-myntra  { background:#ff3f6c; color:#fff; }
+
+    .btn-view{
+      font-size:.8rem; padding:5px 12px; border-radius:8px;
+      background: linear-gradient(90deg,#6ee7b7,#60a5fa);
+      color:#09111d; font-weight:700; text-decoration:none;
+      border:0; display:inline-block; transition:.15s;
+    }
+    .btn-view:hover{ opacity:.85; color:#09111d; transform:translateY(-1px); }
+
+    /* KPI boxes */
+    .kpi{
+      background:rgba(255,255,255,0.05); border:1px solid var(--glass-border);
+      border-radius:12px; padding:14px 10px; text-align:center;
+      transition:.2s;
+    }
+    .kpi:hover{ background:rgba(255,255,255,0.08); }
+    .kpi-val{ font-size:1.3rem; font-weight:800; }
+    .kpi-lbl{ font-size:.78rem; color:var(--muted); margin-top:2px; }
+
+    /* Chart */
+    .chart-wrap{ position:relative; height:280px; }
+
+    /* Chart stats row */
+    .chart-stat{
+      display:flex; flex-direction:column; align-items:center;
+      background:rgba(255,255,255,0.04); border-radius:10px; padding:10px 14px;
+    }
+    .chart-stat .val{ font-weight:700; font-size:1rem; }
+    .chart-stat .lbl{ font-size:.75rem; color:var(--muted); }
+
+    /* Wishlist button */
+    .btn-wishlist{
+      background: linear-gradient(135deg,#7c3aed,#a855f7);
+      color:#fff; border:0; border-radius:10px;
+      padding:8px 18px; font-weight:600; font-size:.9rem;
+      transition:.2s; cursor:pointer;
+    }
+    .btn-wishlist:hover{ opacity:.88; transform:translateY(-1px); }
+    .btn-wishlist.added{
+      background: linear-gradient(135deg,#22c55e,#16a34a);
+    }
+
+    /* Share button */
+    .btn-share{
+      background:rgba(255,255,255,0.08); color:var(--text);
+      border:1px solid var(--glass-border); border-radius:10px;
+      padding:8px 16px; font-size:.9rem; transition:.2s; cursor:pointer;
+    }
+    .btn-share:hover{ background:rgba(255,255,255,0.14); }
+
+    /* Price drop badge */
+    .drop-badge{
+      display:inline-flex; align-items:center; gap:5px;
+      background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3);
+      color:#22c55e; border-radius:999px; padding:4px 12px; font-size:.8rem; font-weight:600;
+    }
+    .rise-badge{
+      background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3);
+      color:#ef4444;
+    }
+
+    /* Wishlist modal */
+    .modal-content{
+      background:#111a2f; border:1px solid var(--glass-border); color:var(--text);
+    }
+    .modal-header{ border-color:var(--glass-border); }
+    .modal-footer{ border-color:var(--glass-border); }
+    .form-control, .form-control:focus{
+      background:rgba(255,255,255,0.07); border-color:var(--glass-border);
+      color:var(--text);
+    }
+    .form-label{ color:var(--muted); font-size:.88rem; }
+
+    /* Breadcrumb */
+    .breadcrumb-item a{ color:var(--muted); text-decoration:none; }
+    .breadcrumb-item.active{ color:var(--text); }
+    .breadcrumb-item+.breadcrumb-item::before{ color:var(--muted); }
+
+    /* Fade in animation */
+    .glass{ animation:fadeUp .4s ease both; }
+    @keyframes fadeUp{
+      from{ opacity:0; transform:translateY(14px); }
+      to  { opacity:1; transform:translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav id="topNav" class="navbar navbar-dark sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{% url 'welcome' %}">
+      <i class="bi bi-bag-check-fill text-primary me-2"></i>
+      <span class="brand-accent">Price</span>MatchX
+    </a>
+    <div class="ms-auto d-flex gap-2 align-items-center">
+  <a href="{% url 'search' %}" class="btn btn-outline-light btn-sm">
+    <i class="bi bi-search me-1"></i>Search
+  </a>
+  {% if user.is_authenticated %}
+    <a href="{% url 'profile' %}" class="btn btn-outline-light btn-sm">
+      <i class="bi bi-person-circle me-1"></i>Profile
+    </a>
+    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
+  {% else %}
+    <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Login</a>
+  {% endif %}
+</div>
+  </div>
+</nav>
+
+<div class="container my-4 pb-5">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'welcome' %}">Home</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'search' %}">Search</a></li>
+      <li class="breadcrumb-item active">{{ product.title|truncatechars:40 }}</li>
+    </ol>
+  </nav>
+
+  <!-- PRODUCT HEADER -->
+  <div class="glass mb-4">
+    <div class="row g-4 align-items-center">
+
+      <!-- Image -->
+      <div class="col-md-3 text-center">
+        {% if product.image_url %}
+          <img src="{{ product.image_url }}" alt="{{ product.title }}" class="prod-img"
+               onerror="this.style.display='none';document.getElementById('imgFallback').style.display='flex'"/>
+          <div id="imgFallback" class="img-placeholder" style="display:none">
+            <i class="bi bi-image"></i>
+          </div>
+        {% else %}
+          <div class="img-placeholder"><i class="bi bi-image"></i></div>
+        {% endif %}
+      </div>
+
+      <!-- Info -->
+      <div class="col-md-9">
+        <h2 class="title-grad mb-2">{{ product.title }}</h2>
+
+        {% if product.brand %}
+          <p class="text-white-50 mb-1"><i class="bi bi-tag me-1"></i>Brand: <strong class="text-white">{{ product.brand }}</strong></p>
+        {% endif %}
+        {% if product.category %}
+          <p class="text-white-50 mb-3"><i class="bi bi-grid me-1"></i>Category: <strong class="text-white">{{ product.category }}</strong></p>
+        {% endif %}
+
+        <!-- KPI Row -->
+        <div class="row g-2 mt-1 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="kpi">
+              <div class="kpi-val">{{ offers|length }}</div>
+              <div class="kpi-lbl">Stores</div>
+            </div>
+          </div>
+          {% if best_offer %}
+          <div class="col-6 col-md-3">
+            <div class="kpi">
+              <div class="kpi-val text-success">₹{{ best_offer.price|floatformat:0 }}</div>
+              <div class="kpi-lbl">Best Price</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="kpi">
+              <div class="kpi-val">{{ best_offer.store|capfirst }}</div>
+              <div class="kpi-lbl">Cheapest Store</div>
+            </div>
+          </div>
+          {% endif %}
+          {% if product.updated_at %}
+          <div class="col-6 col-md-3">
+            <div class="kpi">
+              <div class="kpi-val" style="font-size:.95rem">{{ product.updated_at|date:"d M" }}</div>
+              <div class="kpi-lbl">Last Updated</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-wrap gap-2">
+          {% if user.is_authenticated %}
+            <button class="btn-wishlist" id="wishlistBtn"
+                    data-bs-toggle="modal" data-bs-target="#watchModal">
+              <i class="bi bi-bell me-1"></i> Set Price Alert
+            </button>
+          {% else %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="btn-wishlist" style="text-decoration:none">
+              <i class="bi bi-bell me-1"></i> Set Price Alert
+            </a>
+          {% endif %}
+          <button class="btn-share" id="shareBtn" onclick="shareProduct()">
+            <i class="bi bi-share me-1"></i> Share
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- OFFERS TABLE -->
+    <div class="col-lg-5">
+      <div class="glass h-100">
+        <h5 class="fw-bold mb-3">
+          <i class="bi bi-shop me-2 text-primary"></i>Store Prices
+        </h5>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Store</th>
+                <th>Price</th>
+                <th>Discount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for o in offers %}
+              <tr class="{% if forloop.first %}cheapest-row{% endif %}">
+                <td>
+                  <span class="store-badge store-{{ o.store }}">{{ o.store }}</span>
+                  {% if forloop.first %}
+                    <span class="ms-1" style="font-size:.7rem; color:var(--success)">✓ Best</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="price-big">₹{{ o.price|floatformat:0 }}</span>
+                </td>
+                <td>
+                  {% if o.discount %}
+                    <span class="text-success" style="font-size:.8rem">{{ o.discount }}</span>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex flex-column gap-1">
+                    {% if o.url %}
+                      <a href="{{ o.url }}" target="_blank" rel="noopener" class="btn-view">
+                        View <i class="bi bi-arrow-up-right"></i>
+                      </a>
+                    {% endif %}
+                    {% if user.is_authenticated %}
+                      <form method="POST" action="{% url 'add_to_cart' o.id %}">
+                        {% csrf_token %}
+                        <button type="submit" style="background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);color:#818cf8;border-radius:8px;padding:4px 10px;font-size:.75rem;font-weight:700;cursor:pointer;width:100%;">
+                          🛒 Add to Cart
+                        </button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                  <i class="bi bi-inbox" style="font-size:1.5rem"></i>
+                  <p class="mb-0 mt-1">No offers available</p>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICE HISTORY CHART -->
+    <div class="col-lg-7">
+      <div class="glass h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Price History
+          </h5>
+          {% if labels %}
+            <span id="trendBadge"></span>
+          {% endif %}
+        </div>
+
+        {% if labels %}
+          <!-- Chart stats -->
+          <div class="d-flex gap-3 mb-3 flex-wrap">
+            <div class="chart-stat">
+              <span class="val text-success" id="statMin">—</span>
+              <span class="lbl">Lowest</span>
+            </div>
+            <div class="chart-stat">
+              <span class="val text-danger" id="statMax">—</span>
+              <span class="lbl">Highest</span>
+            </div>
+            <div class="chart-stat">
+              <span class="val" id="statAvg">—</span>
+              <span class="lbl">Average</span>
+            </div>
+            <div class="chart-stat">
+              <span class="val" id="statPoints">—</span>
+              <span class="lbl">Data Points</span>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="priceChart"></canvas>
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <i class="bi bi-clock-history" style="font-size:3rem; color:var(--muted)"></i>
+            <p class="mt-3 text-muted">Price history will appear after<br>multiple price checks for this product.</p>
+            <p class="text-muted" style="font-size:.85rem">Search for this product again tomorrow to start building history.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Back button -->
+  <div class="mt-4">
+    <a href="javascript:history.back()" class="btn btn-outline-light btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back to Results
+    </a>
+  </div>
+
+</div>
+
+<!-- WISHLIST MODAL -->
+<div class="modal fade" id="watchModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-bell-fill text-warning me-2"></i>Set Price Alert
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{% url 'add_watch' product.slug %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            We'll notify you when the price drops below your target.
+          </p>
+          <div class="mb-3">
+            <label class="form-label">Target Price (₹)</label>
+            <input type="number" name="target_price" class="form-control"
+                   placeholder="e.g. 5000"
+                   {% if best_offer %}value="{{ best_offer.price|floatformat:0 }}"{% endif %} />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email for Alert</label>
+            <input type="email" name="email" class="form-control"
+                   placeholder="your@email.com"
+                   {% if user.email %}value="{{ user.email }}"{% endif %} />
+          </div>
+          {% if best_offer %}
+          <div class="alert alert-dark p-2" style="font-size:.85rem">
+            <i class="bi bi-info-circle me-1"></i>
+            Current best price: <strong>₹{{ best_offer.price|floatformat:0 }}</strong>
+            on <strong>{{ best_offer.store|capfirst }}</strong>
+          </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-bell me-1"></i>Save Alert
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE TOAST -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="shareToast" class="toast align-items-center text-bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-check-circle me-2"></i>Link copied to clipboard!
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+{% if labels %}
+// ── Data ──────────────────────────────────────────
+const labels = {{ labels|safe }};
+const values = {{ values|safe }};
+
+// ── Stats ─────────────────────────────────────────
+const minVal = Math.min(...values);
+const maxVal = Math.max(...values);
+const avgVal = values.reduce((a,b) => a+b, 0) / values.length;
+
+document.getElementById('statMin').textContent  = '₹' + minVal.toLocaleString('en-IN');
+document.getElementById('statMax').textContent  = '₹' + maxVal.toLocaleString('en-IN');
+document.getElementById('statAvg').textContent  = '₹' + Math.round(avgVal).toLocaleString('en-IN');
+document.getElementById('statPoints').textContent = values.length;
+
+// ── Trend badge ───────────────────────────────────
+if (values.length >= 2) {
+  const first = values[0], last = values[values.length - 1];
+  const diff  = last - first;
+  const pct   = ((Math.abs(diff) / first) * 100).toFixed(1);
+  const badge = document.getElementById('trendBadge');
+  if (diff < 0) {
+    badge.innerHTML = `<span class="drop-badge"><i class="bi bi-arrow-down"></i> ₹${Math.abs(diff).toLocaleString('en-IN')} (${pct}% drop)</span>`;
+  } else if (diff > 0) {
+    badge.innerHTML = `<span class="drop-badge rise-badge"><i class="bi bi-arrow-up"></i> ₹${diff.toLocaleString('en-IN')} (${pct}% rise)</span>`;
+  } else {
+    badge.innerHTML = `<span class="drop-badge" style="color:var(--muted)">Stable</span>`;
+  }
+}
+
+// ── Chart ─────────────────────────────────────────
+const ctx = document.getElementById('priceChart').getContext('2d');
+
+// Gradient fill
+const grad = ctx.createLinearGradient(0, 0, 0, 280);
+grad.addColorStop(0,   'rgba(14,165,233,0.35)');
+grad.addColorStop(0.6, 'rgba(14,165,233,0.08)');
+grad.addColorStop(1,   'rgba(14,165,233,0.0)');
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Price (₹)',
+      data: values,
+      borderColor: '#0ea5e9',
+      borderWidth: 2.5,
+      backgroundColor: grad,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: values.map((v,i) => {
+        if (v === minVal) return '#22c55e';
+        if (v === maxVal) return '#ef4444';
+        return '#0ea5e9';
+      }),
+      pointBorderColor: '#0b1220',
+      pointBorderWidth: 2,
+      pointRadius: values.map((v,i) => (v === minVal || v === maxVal) ? 7 : 4),
+      pointHoverRadius: 9,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 900, easing: 'easeInOutQuart' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111a2f',
+        borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        titleColor: '#9badc9',
+        bodyColor: '#e6eef7',
+        padding: 10,
+        callbacks: {
+          label: ctx => {
+            const v = ctx.parsed.y;
+            let suffix = '';
+            if (v === minVal) suffix = ' 🟢 Lowest';
+            if (v === maxVal) suffix = ' 🔴 Highest';
+            return '₹' + v.toLocaleString('en-IN') + suffix;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#9badc9', font: { size: 11 } },
+        grid:  { color: 'rgba(255,255,255,0.05)' }
+      },
+      y: {
+        beginAtZero: false,
+        ticks: {
+          color: '#9badc9',
+          font: { size: 11 },
+          callback: v => '₹' + v.toLocaleString('en-IN')
+        },
+        grid: { color: 'rgba(255,255,255,0.05)' }
+      }
+    }
+  }
+});
+{% endif %}
+
+// ── Share button ──────────────────────────────────
+function shareProduct() {
+  const url  = window.location.href;
+  const toast = bootstrap.Toast.getOrCreateInstance(document.getElementById('shareToast'));
+  if (navigator.share) {
+    navigator.share({
+      title: '{{ product.title|escapejs }}',
+      text:  'Check out this product on PriceMatchX!',
+      url:   url,
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => toast.show());
+  }
+}
+</script>
+
+</body>
+</html>

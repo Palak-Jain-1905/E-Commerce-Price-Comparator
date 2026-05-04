@@ -1,0 +1,104 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in | PriceMatchX</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root{ --bg:#0b1220; --text:#e6eef7; --muted:#a9b6cc; --glass:rgba(255,255,255,.08); --border:rgba(255,255,255,.16); --brand:#7c3aed; --brand2:#0ea5e9; }
+    [data-theme="light"]{ --bg:#f6f9ff; --text:#0b1220; --muted:#546178; --glass:#fff; --border:rgba(0,0,0,.08); }
+    html,body{height:100%}
+    body{background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,"Poppins",sans-serif}
+    .bg-deco{position:fixed;inset:0;z-index:-1;background:
+      radial-gradient(1000px 600px at 10% 15%, rgba(14,165,233,0.35), transparent 60%),
+      radial-gradient(800px 500px at 85% 10%, rgba(124,58,237,0.30), transparent 60%),
+      linear-gradient(180deg, rgba(6,10,20,0.70), rgba(6,10,20,0.9));}
+    [data-theme="light"] .bg-deco{background:
+      radial-gradient(1000px 600px at 10% 15%, rgba(14,165,233,0.15), transparent 60%),
+      radial-gradient(800px 500px at 85% 10%, rgba(124,58,237,0.12), transparent 60%),
+      linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.85));}
+    .card-glass{background:var(--glass);border:1px solid var(--border);border-radius:18px;backdrop-filter:blur(12px);box-shadow:0 18px 45px rgba(0,0,0,.35)}
+    .brand{font-weight:800;letter-spacing:.3px}
+    .accent{background:linear-gradient(90deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .btn-grad{background:linear-gradient(135deg,var(--brand),var(--brand2));border:0;color:#fff;border-radius:12px}
+    .form-control{border-radius:12px}
+    .input-group-text{border-radius:12px}
+    .link-muted{color:var(--muted);text-decoration:none}
+    .link-muted:hover{text-decoration:underline}
+    .hint{color:var(--muted);font-size:.9rem}
+  </style>
+</head>
+<body>
+  <div class="bg-deco"></div>
+
+  <div class="container px-3">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+        <div class="card-glass p-4 p-md-5">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <a class="brand text-decoration-none text-white" href="{% url 'welcome' %}"><span class="accent">Price</span>MatchX</a>
+            <a class="btn btn-outline-light btn-sm" href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Create account</a>
+          </div>
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          <h3 class="fw-bold mb-2">Welcome back</h3>
+          <p class="hint mb-4">Sign in to continue</p>
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input type="text" name="username" id="id_username" class="form-control" placeholder="yourname"
+                     value="{{ form.data.username|default:'' }}" required autofocus>
+              {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-2">
+              <label class="form-label d-flex justify-content-between">
+                <span>Password</span>
+                <button type="button" class="btn btn-sm btn-link link-muted p-0" id="togglePwd"><i class="bi bi-eye"></i> Show</button>
+              </label>
+              <div class="input-group">
+                <input type="password" name="password" id="id_password" class="form-control" placeholder="••••••••" required>
+                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+              </div>
+              {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                <label class="form-check-label" for="remember">Remember me</label>
+              </div>
+              <a href="#" class="link-muted" title="Coming soon">Forgot password?</a>
+            </div>
+
+            <button class="btn btn-grad w-100 py-2 mb-2" type="submit">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Sign in
+            </button>
+            <div class="text-center small mt-1">No account? <a href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Sign up</a></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const t = document.getElementById('togglePwd');
+  const p = document.getElementById('id_password');
+  t?.addEventListener('click', () => {
+    const show = p.type === 'password';
+    p.type = show ? 'text' : 'password';
+    t.innerHTML = show ? '<i class="bi bi-eye-slash"></i> Hide' : '<i class="bi bi-eye"></i> Show';
+  });
+</script>
+</body>
+</html>

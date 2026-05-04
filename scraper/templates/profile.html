@@ -1,0 +1,609 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Profile — PriceMatchX</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #06080f;
+      --s1:       #0c1120;
+      --s2:       #111827;
+      --s3:       #1a2236;
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.12);
+      --text:     #e2eaff;
+      --muted:    #4a6080;
+      --muted2:   #7a96b8;
+      --accent:   #6366f1;
+      --accent2:  #38bdf8;
+      --green:    #34d399;
+      --red:      #f87171;
+      --gold:     #fbbf24;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(6,8,15,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      display: flex; align-items: center;
+      padding: 0 28px;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 800;
+      color: #fff; text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .logo-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    }
+    .nav-right { display: flex; gap: 8px; align-items: center; }
+    .nav-btn {
+      padding: 6px 16px; border-radius: 8px;
+      border: 1px solid var(--border2);
+      color: var(--muted2); background: transparent;
+      font-family: inherit; font-size: 0.82rem; font-weight: 600;
+      text-decoration: none; cursor: pointer; transition: all 0.2s;
+    }
+    .nav-btn:hover { color: #fff; border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.05); }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(180deg, #0c1120 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 40px 28px 32px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; gap: 24px;
+      flex-wrap: wrap;
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
+    }
+    .hero-info { flex: 1; min-width: 200px; }
+    .hero-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem; font-weight: 800; color: #fff;
+      margin-bottom: 4px;
+    }
+    .hero-meta { color: var(--muted2); font-size: 0.84rem; }
+    .hero-stats {
+      display: flex; gap: 24px; flex-wrap: wrap;
+    }
+    .hstat {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px; text-align: center; min-width: 90px;
+    }
+    .hstat-n {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hstat-l { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+    /* ── TABS ── */
+    .tabs-wrap {
+      max-width: 1100px; margin: 0 auto;
+      padding: 24px 28px 0;
+    }
+    .tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 10px 18px; border-radius: 8px 8px 0 0;
+      border: none; background: transparent;
+      color: var(--muted2); font-family: inherit;
+      font-size: 0.84rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      white-space: nowrap; position: relative;
+    }
+    .tab:hover { color: #fff; background: rgba(255,255,255,0.04); }
+    .tab.active {
+      color: #fff;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-bottom: 1px solid var(--s2);
+      margin-bottom: -1px;
+    }
+    .tab .badge {
+      display: inline-block; margin-left: 6px;
+      background: var(--accent); color: #fff;
+      font-size: 0.65rem; padding: 1px 6px; border-radius: 999px;
+    }
+
+    /* ── CONTENT ── */
+    .content {
+      max-width: 1100px; margin: 0 auto;
+      padding: 24px 28px 64px;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .card-head {
+      padding: 14px 20px;
+      background: var(--s2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem; font-weight: 700; color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-body { padding: 16px; }
+
+    /* ── WISHLIST ITEMS ── */
+    .wish-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      margin-bottom: 8px; transition: border-color 0.2s;
+    }
+    .wish-item:hover { border-color: var(--accent); }
+    .wish-item:last-child { margin-bottom: 0; }
+    .wish-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(56,189,248,0.2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; flex-shrink: 0;
+    }
+    .wish-info { flex: 1; min-width: 0; }
+    .wish-name {
+      font-size: 0.85rem; font-weight: 600; color: var(--text);
+      text-decoration: none; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; display: block;
+    }
+    .wish-name:hover { color: var(--accent2); }
+    .wish-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .wish-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .target-badge {
+      padding: 3px 10px; border-radius: 999px;
+      background: rgba(99,102,241,0.15); color: var(--accent);
+      border: 1px solid rgba(99,102,241,0.3);
+      font-size: 0.72rem; font-weight: 700;
+    }
+    .rm-btn {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+    }
+    .rm-btn:hover { background: rgba(248,113,113,0.1); border-color: var(--red); color: var(--red); }
+
+    /* ── HISTORY ITEMS ── */
+    .hist-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg);
+      margin-bottom: 6px; text-decoration: none;
+      transition: border-color 0.2s;
+    }
+    .hist-item:hover { border-color: var(--accent); }
+    .hist-left { display: flex; align-items: center; gap: 10px; }
+    .hist-icon { color: var(--muted); font-size: 0.9rem; }
+    .hist-q { font-size: 0.85rem; color: var(--text); font-weight: 500; }
+    .hist-right { display: flex; align-items: center; gap: 8px; }
+    .hist-time { font-size: 0.72rem; color: var(--muted); }
+    .hist-arrow { color: var(--accent); font-size: 0.8rem; }
+
+    /* ── ORDERS ── */
+    .order-item {
+      padding: 14px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg);
+      margin-bottom: 8px;
+    }
+    .order-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .order-name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .order-status {
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .status-delivered { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+    .status-pending   { background: rgba(251,191,36,0.12);  color: var(--gold);  border: 1px solid rgba(251,191,36,0.25); }
+    .status-cancelled { background: rgba(248,113,113,0.12); color: var(--red);   border: 1px solid rgba(248,113,113,0.25); }
+    .order-meta { display: flex; gap: 16px; }
+    .order-meta span { font-size: 0.75rem; color: var(--muted2); }
+    .order-price { font-weight: 700; color: var(--text); }
+
+    /* ── SETTINGS ── */
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-info {}
+    .setting-label { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+    .setting-desc  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative; width: 40px; height: 22px; flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--s3); border-radius: 22px;
+      transition: 0.3s; border: 1px solid var(--border2);
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      left: 3px; bottom: 2px;
+      background: var(--muted); transition: 0.3s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: #fff; }
+
+    .setting-input {
+      background: var(--s2); border: 1px solid var(--border2);
+      color: var(--text); border-radius: 8px;
+      padding: 7px 12px; font-family: inherit; font-size: 0.84rem;
+      outline: none; width: 200px;
+    }
+    .setting-input:focus { border-color: var(--accent); }
+
+    .save-btn {
+      padding: 8px 20px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      border: none; color: #fff;
+      font-family: inherit; font-size: 0.84rem; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .save-btn:hover { opacity: 0.85; }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      padding: 48px 20px; text-align: center; color: var(--muted);
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty p { font-size: 0.88rem; line-height: 1.6; }
+    .empty a { color: var(--accent2); text-decoration: none; font-weight: 600; }
+
+    /* ── DANGER ZONE ── */
+    .danger-btn {
+      padding: 8px 18px; border-radius: 8px;
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      color: var(--red); font-family: inherit;
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .danger-btn:hover { background: rgba(248,113,113,0.2); }
+
+    /* ── NOTIFICATIONS ── */
+    .notif-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg);
+      margin-bottom: 8px;
+    }
+    .notif-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0; margin-top: 5px;
+    }
+    .notif-dot.read { background: var(--muted); }
+    .notif-text { font-size: 0.84rem; color: var(--text); line-height: 1.5; }
+    .notif-time { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+    @media(max-width: 600px) {
+      .hero-inner { flex-direction: column; text-align: center; }
+      .hero-stats { justify-content: center; }
+      nav { padding: 0 16px; }
+      .tabs-wrap, .content { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" href="{% url 'welcome' %}">
+    <div class="logo-dot"></div>PriceMatchX
+  </a>
+  <div class="nav-right">
+    <a href="{% url 'search' %}" class="nav-btn">🔍 Search</a>
+    <a href="{% url 'logout' %}" class="nav-btn">Logout</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="avatar">{{ request.user.username|first|upper }}</div>
+    <div class="hero-info">
+      <div class="hero-name">{{ request.user.username }}</div>
+      <div class="hero-meta">📅 Member since {{ request.user.date_joined|date:"F Y" }} &nbsp;·&nbsp; ✉️ {{ request.user.email|default:"No email set" }}</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat">
+        <div class="hstat-n">{{ wishlist|length }}</div>
+        <div class="hstat-l">Watchlist</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-n">{{ history|length }}</div>
+        <div class="hstat-l">Searches</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-n">0</div>
+        <div class="hstat-l">Orders</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="watchlist">❤️ Watchlist <span class="badge">{{ wishlist|length }}</span></button>
+    <button class="tab" data-tab="history">🕐 History</button>
+    <button class="tab" data-tab="orders">📦 Orders</button>
+    <button class="tab" data-tab="notifications">🔔 Notifications</button>
+    <button class="tab" data-tab="settings">⚙️ Settings</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- WATCHLIST TAB -->
+  <div class="tab-panel active" id="tab-watchlist">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">❤️ My Watchlist</div>
+        <span style="font-size:0.78rem; color:var(--muted2)">{{ wishlist|length }} items</span>
+      </div>
+      <div class="card-body">
+        {% if wishlist %}
+          {% for item in wishlist %}
+          <div class="wish-item">
+            <div class="wish-icon">🛍️</div>
+            <div class="wish-info">
+              <a href="{% url 'product_detail' item.product.slug %}" class="wish-name" title="{{ item.product.title }}">
+                {{ item.product.title|truncatechars:60 }}
+              </a>
+              <div class="wish-meta">Added {{ item.added_at|date:"d M Y" }}{% if item.email_alert %} · Alert: {{ item.email_alert }}{% endif %}</div>
+            </div>
+            <div class="wish-right">
+              {% if item.target_price %}
+                <span class="target-badge">🎯 ₹{{ item.target_price }}</span>
+              {% endif %}
+              <form method="post" action="{% url 'remove_watch' item.product.slug %}" style="display:inline">
+                {% csrf_token %}
+                <button class="rm-btn" title="Remove">✕</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">
+            <div class="empty-icon">🔔</div>
+            <p>No products in watchlist yet.<br>
+            <a href="{% url 'welcome' %}">Search a product</a> and click Watch to get price alerts!</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-panel" id="tab-history">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">🕐 Search History</div>
+        <span style="font-size:0.78rem; color:var(--muted2)">Last 20 searches</span>
+      </div>
+      <div class="card-body">
+        {% if history %}
+          {% for log in history %}
+          <a href="{% url 'search' %}?q={{ log.query|urlencode }}" class="hist-item">
+            <div class="hist-left">
+              <span class="hist-icon">🔍</span>
+              <span class="hist-q">{{ log.query }}</span>
+            </div>
+            <div class="hist-right">
+              <span class="hist-time">{{ log.ts|date:"d M, H:i" }}</span>
+              <span class="hist-arrow">↗</span>
+            </div>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="empty">
+            <div class="empty-icon">🔍</div>
+            <p>No searches yet.<br><a href="{% url 'welcome' %}">Start comparing prices!</a></p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ORDERS TAB -->
+  <div class="tab-panel" id="tab-orders">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">📦 Order History</div>
+        <span style="font-size:0.78rem; color:var(--muted2)">Track your purchases</span>
+      </div>
+      <div class="card-body">
+        <!-- Sample orders — replace with real DB data when order system is built -->
+        <div class="empty">
+          <div class="empty-icon">🛒</div>
+          <p>No orders yet.<br>
+          When you place an order via PriceMatchX, it will appear here.<br>
+          <a href="{% url 'welcome' %}">Start shopping →</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS TAB -->
+  <div class="tab-panel" id="tab-notifications">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">🔔 Notifications</div>
+        <button style="background:none;border:none;color:var(--accent2);font-size:0.78rem;cursor:pointer;font-family:inherit;">Mark all read</button>
+      </div>
+      <div class="card-body">
+        {% if wishlist %}
+          {% for item in wishlist %}
+          <div class="notif-item">
+            <div class="notif-dot"></div>
+            <div>
+              <div class="notif-text">🎯 Price alert set for <strong>{{ item.product.title|truncatechars:40 }}</strong>{% if item.target_price %} at ₹{{ item.target_price }}{% endif %}</div>
+              <div class="notif-time">{{ item.added_at|date:"d M Y, H:i" }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty">
+            <div class="empty-icon">🔕</div>
+            <p>No notifications yet.<br>Add products to watchlist to get price drop alerts!</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="tab-panel" id="tab-settings">
+
+    <!-- Account Settings -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <div class="card-title">👤 Account</div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Username</div>
+          <div class="setting-desc">Your display name on PriceMatchX</div>
+        </div>
+        <input class="setting-input" type="text" value="{{ request.user.username }}" readonly/>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Email</div>
+          <div class="setting-desc">Used for price drop alerts</div>
+        </div>
+        <input class="setting-input" type="email" value="{{ request.user.email|default:'' }}" placeholder="Add your email"/>
+      </div>
+      <div class="setting-row" style="justify-content:flex-end; border-bottom:none;">
+        <button class="save-btn">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- Notification Settings -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <div class="card-title">🔔 Notifications</div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Email Price Alerts</div>
+          <div class="setting-desc">Get emailed when a watched product drops in price</div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Weekly Summary</div>
+          <div class="setting-desc">Receive a weekly digest of price changes</div>
+        </div>
+        <label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Deal Alerts</div>
+          <div class="setting-desc">Get notified about trending deals</div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title" style="color:var(--red)">⚠️ Danger Zone</div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Clear Search History</div>
+          <div class="setting-desc">Delete all your past searches</div>
+        </div>
+        <button class="danger-btn">Clear History</button>
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-label">Logout</div>
+          <div class="setting-desc">Sign out of your account</div>
+        </div>
+        <a href="{% url 'logout' %}" class="danger-btn" style="text-decoration:none">Logout →</a>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
