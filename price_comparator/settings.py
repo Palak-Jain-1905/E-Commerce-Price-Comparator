@@ -9,6 +9,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://e-commerce-price-comparator-production.up.railway.app'
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -50,7 +54,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'price_comparator.wsgi.application'
 
-# Local pe MySQL, Railway pe SQLite
 if os.environ.get('RAILWAY_ENVIRONMENT'):
     DATABASES = {
         'default': {
