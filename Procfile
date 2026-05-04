@@ -1,1 +1,1 @@
-web: gunicorn price_comparator.wsgi --log-file -
+web: gunicorn price_comparator.wsgi --log-file - --bind 0.0.0.0:$PORT
