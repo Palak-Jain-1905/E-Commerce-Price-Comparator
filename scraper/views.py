@@ -117,8 +117,22 @@ def get_driver(headless=False, disable_images=False):
 
     try:
         if os.environ.get('RAILWAY_ENVIRONMENT'):
-            chrome_options.binary_location = "/nix/store/chromium/bin/chromium"
-            service = Service(ChromeDriverManager().install())
+            import subprocess
+            try:
+                chromium_path = subprocess.check_output(['which', 'chromium']).decode().strip()
+            except:
+                try:
+                    chromium_path = subprocess.check_output(['which', 'chromium-browser']).decode().strip()
+                except:
+                    chromium_path = '/usr/bin/chromium'
+            
+            try:
+                chromedriver_path = subprocess.check_output(['which', 'chromedriver']).decode().strip()
+            except:
+                chromedriver_path = '/usr/bin/chromedriver'
+            
+            chrome_options.binary_location = chromium_path
+            service = Service(chromedriver_path)
         else:
             service = Service(ChromeDriverManager().install())
 
