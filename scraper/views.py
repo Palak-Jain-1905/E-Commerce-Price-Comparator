@@ -272,7 +272,7 @@ SCRAPER_API_KEY = "30040d9479b6720981bba90a5f7fa256"
 
 def get_flipkart_prices(driver, query):
     url = f"https://www.flipkart.com/search?q={query}"
-    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Flipkart (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
