@@ -863,17 +863,17 @@ def add_watch(request, slug):
             # Alert save hote hi confirmation email bhejo
             if email:
                 from django.core.mail import send_mail
+                from threading import Thread
+
                 cheapest = Offer.objects.filter(
                     product=product, price__isnull=False
                 ).order_by('price').first()
-                
+
                 current_price = f"₹{cheapest.price}" if cheapest else "N/A"
                 store = cheapest.store.capitalize() if cheapest else "N/A"
-                
-                send_mail(
-                    subject=f'🔔 Price Alert Set! {product.title[:40]}',
-                    message=f'''
-Namaste! Aapka price alert set ho gaya hai.
+
+                subject = f'🔔 Price Alert Set! {product.title[:40]}'
+                message = f'''Namaste! Aapka price alert set ho gaya hai.
 
 Product: {product.title}
 Target Price: ₹{target}
@@ -882,13 +882,17 @@ Product Link: https://e-commerce-price-comparator-production.up.railway.app/p/{p
 
 Jab bhi price aapke target se kam hoga, hum aapko notify karenge!
 
-- PriceMatchX Team
-                    ''',
-                    from_email='palakjain87654@gmail.com',
-                    recipient_list=[email],
-                    fail_silently=True,
-                )
-                print(f"[ALERT] Confirmation email sent to {email}")
+- PriceMatchX Team'''
+
+                def _send(to_email, subj, msg):
+                    try:
+                        send_mail(subj, msg, 'palakjain87654@gmail.com', [to_email], fail_silently=True)
+                        print(f"[ALERT] Confirmation email sent to {to_email}")
+                    except Exception as e:
+                        print(f"[ALERT ERROR] {e}")
+
+                Thread(target=_send, args=(email, subject, message), daemon=True).start()
+
         except Exception:
             logger.exception("Wishlist save failed")
     return redirect("product_detail", slug=slug)
