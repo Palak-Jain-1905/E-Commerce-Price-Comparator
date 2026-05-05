@@ -268,19 +268,17 @@ def get_amazon_prices(driver, query):
     return prices, reviews, discounts, links
 
 
+SCRAPER_API_KEY = "30040d9479b6720981bba90a5f7fa256"
+
 def get_flipkart_prices(driver, query):
-    """Flipkart scraper using requests + BeautifulSoup"""
     url = f"https://www.flipkart.com/search?q={query}"
-    print(f"\n[DEBUG] Flipkart (requests): Loading {url}")
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    print(f"\n[DEBUG] Flipkart (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "en-IN,en;q=0.9",
-        }
-        resp = requests.get(url, headers=headers, timeout=15)
+        resp = requests.get(scraper_url, timeout=60)
         soup = BeautifulSoup(resp.text, "html.parser")
-        cards = soup.select("div._75nlfW, div.tUxRFH, div._1AtVbE")
+        cards = soup.select("div._75nlfW, div.tUxRFH, div.cPHDOP")
         print(f"[DEBUG] Flipkart: Found {len(cards)} cards")
         for card in cards[:MAX_ITEMS]:
             try:
@@ -293,34 +291,29 @@ def get_flipkart_prices(driver, query):
                 price_el = card.select_one("div.Nx9bqj, div._30jeq3")
                 price = safe_int(price_el.get_text(strip=True)) if price_el else None
                 link_el = card.select_one("a")
-                link = "https://www.flipkart.com" + link_el["href"] if link_el and link_el.get("href") else "#"
+                href = link_el.get("href", "#") if link_el else "#"
+                link = f"https://www.flipkart.com{href}" if href.startswith("/") else href
                 disc_el = card.select_one("div.UkUFwK, div._3Ay6Sb")
                 discount = disc_el.get_text(strip=True) if disc_el else "No discount"
-                rat_el = card.select_one("div.XQDdHH, div._3LWZlK")
-                rating = rat_el.get_text(strip=True) if rat_el else "No reviews"
                 prices[title] = price
                 links[title] = link
                 discounts[title] = discount
-                reviews[title] = rating
+                reviews[title] = "No reviews"
             except Exception:
                 continue
     except Exception as e:
-        print(f"[DEBUG] Flipkart requests failed: {e}")
+        print(f"[DEBUG] Flipkart ScraperAPI failed: {e}")
     print(f"[DEBUG] Flipkart: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
 
 def get_meesho_prices(driver, query):
-    """Meesho scraper using requests + BeautifulSoup"""
     url = f"https://www.meesho.com/search?q={query}"
-    print(f"\n[DEBUG] Meesho (requests): Loading {url}")
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    print(f"\n[DEBUG] Meesho (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "en-IN,en;q=0.9",
-        }
-        resp = requests.get(url, headers=headers, timeout=15)
+        resp = requests.get(scraper_url, timeout=60)
         soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.select("div.sc-bqiRlB, div.NewProductCardstyled__CardStyled-sc-6y2tys-0")
         print(f"[DEBUG] Meesho: Found {len(cards)} cards")
@@ -335,9 +328,8 @@ def get_meesho_prices(driver, query):
                 price_el = card.select_one("h5, span.price")
                 price = safe_int(price_el.get_text(strip=True)) if price_el else None
                 link_el = card.select_one("a")
-                link = link_el["href"] if link_el and link_el.get("href") else "#"
-                if link != "#" and not link.startswith("http"):
-                    link = "https://www.meesho.com" + link
+                href = link_el.get("href", "#") if link_el else "#"
+                link = f"https://www.meesho.com{href}" if href.startswith("/") else href
                 prices[title] = price
                 links[title] = link
                 discounts[title] = "No discount"
@@ -345,22 +337,18 @@ def get_meesho_prices(driver, query):
             except Exception:
                 continue
     except Exception as e:
-        print(f"[DEBUG] Meesho requests failed: {e}")
+        print(f"[DEBUG] Meesho ScraperAPI failed: {e}")
     print(f"[DEBUG] Meesho: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
 
 def get_myntra_prices(driver, query):
-    """Myntra scraper using requests + BeautifulSoup"""
     url = f"https://www.myntra.com/{query}"
-    print(f"\n[DEBUG] Myntra (requests): Loading {url}")
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    print(f"\n[DEBUG] Myntra (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "en-IN,en;q=0.9",
-        }
-        resp = requests.get(url, headers=headers, timeout=15)
+        resp = requests.get(scraper_url, timeout=60)
         soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.select("li.product-base")
         print(f"[DEBUG] Myntra: Found {len(cards)} cards")
@@ -374,7 +362,8 @@ def get_myntra_prices(driver, query):
                 price_el = card.select_one(".product-discountedPrice, .product-price")
                 price = safe_int(price_el.get_text(strip=True)) if price_el else None
                 link_el = card.select_one("a")
-                link = "https://www.myntra.com/" + link_el["href"] if link_el and link_el.get("href") else "#"
+                href = link_el.get("href", "#") if link_el else "#"
+                link = f"https://www.myntra.com/{href}" if not href.startswith("http") else href
                 disc_el = card.select_one(".product-discountPercentage")
                 discount = disc_el.get_text(strip=True) if disc_el else "No discount"
                 prices[title] = price
@@ -384,7 +373,7 @@ def get_myntra_prices(driver, query):
             except Exception:
                 continue
     except Exception as e:
-        print(f"[DEBUG] Myntra requests failed: {e}")
+        print(f"[DEBUG] Myntra ScraperAPI failed: {e}")
     print(f"[DEBUG] Myntra: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
