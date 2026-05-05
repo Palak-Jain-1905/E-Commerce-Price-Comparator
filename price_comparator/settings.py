@@ -118,3 +118,4 @@ EMAIL_TIMEOUT       = 10  # 10 second mein fail — Gunicorn timeout nahi hoga
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
+EMAIL_TIMEOUT = 10
