@@ -316,33 +316,51 @@ SCRAPER_API_KEY = "30040d9479b6720981bba90a5f7fa256"
 
 def get_flipkart_prices(driver, query):
     url = f"https://www.flipkart.com/search?q={query}"
-    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Flipkart (ScraperAPI): Loading")
-    prices, reviews, discounts, links = {}, {}, {}, {}
+    prices, reviews, discounts, links, images = {}, {}, {}, {}, {}
     try:
         resp = requests.get(scraper_url, timeout=25)
         soup = BeautifulSoup(resp.text, "html.parser")
-        cards = soup.select("div._75nlfW, div.tUxRFH, div.cPHDOP")
+        cards = soup.select("div[data-id]")
         print(f"[DEBUG] Flipkart: Found {len(cards)} cards")
         for card in cards[:MAX_ITEMS]:
             try:
-                title_el = card.select_one("div.KzDlHZ, a.WKTcLC, div._4rR01T, a.s1Q9rs")
+                # Title
+                title_el = card.select_one("a[title]")
                 if not title_el:
                     continue
-                title = title_el.get_text(strip=True)
+                title = title_el.get("title", "").strip()
                 if not title or is_fake_title(title):
                     continue
-                price_el = card.select_one("div.Nx9bqj, div._30jeq3")
+
+                # Price
+                price_el = card.select_one("div.hZ3P6w")
                 price = safe_int(price_el.get_text(strip=True)) if price_el else None
+
+                # Discount
+                disc_el = card.select_one("div.UkUFwK, div._3Ay6Sb, div.kUwMCB")
+                discount = "No discount"
+                for el in card.find_all(True):
+                    t = el.get_text(strip=True)
+                    if "%" in t and "off" in t and len(t) < 15:
+                        discount = t
+                        break
+
+                # Link
                 link_el = card.select_one("a")
                 href = link_el.get("href", "#") if link_el else "#"
                 link = f"https://www.flipkart.com{href}" if href.startswith("/") else href
-                disc_el = card.select_one("div.UkUFwK, div._3Ay6Sb")
-                discount = disc_el.get_text(strip=True) if disc_el else "No discount"
+
+                # Image
+                img_el = card.select_one("img")
+                image = img_el.get("src", "") if img_el else ""
+
                 prices[title] = price
                 links[title] = link
                 discounts[title] = discount
                 reviews[title] = "No reviews"
+                images[title] = image
             except Exception:
                 continue
     except Exception as e:
