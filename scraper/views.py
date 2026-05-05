@@ -12,6 +12,7 @@ from difflib import SequenceMatcher
 from decimal import Decimal
 import requests
 from bs4 import BeautifulSoup
+import json
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import FileResponse, Http404, JsonResponse
@@ -394,34 +395,65 @@ def get_myntra_prices(driver, query):
     url = f"https://www.myntra.com/{query}"
     scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Myntra (ScraperAPI): Loading")
-    prices, reviews, discounts, links = {}, {}, {}, {}
+    prices, reviews, discounts, links, images = {}, {}, {}, {}, {}
     try:
         resp = requests.get(scraper_url, timeout=25)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        cards = soup.select("li.product-base")
-        print(f"[DEBUG] Myntra: Found {len(cards)} cards")
-        for card in cards[:MAX_ITEMS]:
+        raw = resp.text
+
+        # window.__myx JSON extract karo
+        idx = raw.find('window.__myx = {')
+        if idx == -1:
+            print("[DEBUG] Myntra: window.__myx not found")
+            return {}, {}, {}, {}
+
+        start = idx + len('window.__myx = ')
+        depth = 0
+        end = start
+        for i in range(start, len(raw)):
+            ch = raw[i]
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+
+        data = json.loads(raw[start:end])
+        products = data.get('searchData', {}).get('results', {}).get('products', [])
+        print(f"[DEBUG] Myntra: Found {len(products)} products")
+
+        for p in products[:MAX_ITEMS]:
             try:
-                brand = card.select_one(".product-brand")
-                name = card.select_one(".product-product")
-                title = f"{brand.get_text(strip=True) if brand else ''} {name.get_text(strip=True) if name else ''}".strip()
+                title = p.get('productName') or p.get('product', '')
                 if not title or is_fake_title(title):
                     continue
-                price_el = card.select_one(".product-discountedPrice, .product-price")
-                price = safe_int(price_el.get_text(strip=True)) if price_el else None
-                link_el = card.select_one("a")
-                href = link_el.get("href", "#") if link_el else "#"
-                link = f"https://www.myntra.com/{href}" if not href.startswith("http") else href
-                disc_el = card.select_one(".product-discountPercentage")
-                discount = disc_el.get_text(strip=True) if disc_el else "No discount"
-                prices[title] = price
-                links[title] = link
+
+                price = p.get('price')
+                mrp = p.get('mrp')
+                discount_amt = p.get('discount', 0)
+                discount = f"Rs. {discount_amt} OFF" if discount_amt else "No discount"
+
+                slug = p.get('landingPageUrl', '')
+                link = f"https://www.myntra.com/{slug}" if slug else "#"
+
+                image = p.get('searchImage', '')
+
+                rating = p.get('rating', 0)
+                rating_count = p.get('ratingCount', 0)
+                review = f"⭐ {round(rating,1)} ({rating_count:,} reviews)" if rating else "No reviews"
+
+                prices[title]   = price
                 discounts[title] = discount
-                reviews[title] = "No reviews"
+                links[title]    = link
+                reviews[title]  = review
+
             except Exception:
                 continue
+
     except Exception as e:
         print(f"[DEBUG] Myntra ScraperAPI failed: {e}")
+
     print(f"[DEBUG] Myntra: Scraped {len(prices)} items")
     return prices, reviews, discounts, links
 
