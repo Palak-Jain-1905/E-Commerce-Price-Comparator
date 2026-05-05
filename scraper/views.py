@@ -320,7 +320,7 @@ def get_flipkart_prices(driver, query):
     print(f"\n[DEBUG] Flipkart (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
-        resp = requests.get(scraper_url, timeout=60)
+        resp = requests.get(scraper_url, timeout=25)
         soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.select("div._75nlfW, div.tUxRFH, div.cPHDOP")
         print(f"[DEBUG] Flipkart: Found {len(cards)} cards")
@@ -357,7 +357,7 @@ def get_meesho_prices(driver, query):
     print(f"\n[DEBUG] Meesho (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
-        resp = requests.get(scraper_url, timeout=60)
+        resp = requests.get(scraper_url, timeout=25)
         soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.select("div.sc-bqiRlB, div.NewProductCardstyled__CardStyled-sc-6y2tys-0")
         print(f"[DEBUG] Meesho: Found {len(cards)} cards")
@@ -392,7 +392,7 @@ def get_myntra_prices(driver, query):
     print(f"\n[DEBUG] Myntra (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
-        resp = requests.get(scraper_url, timeout=60)
+        resp = requests.get(scraper_url, timeout=25)
         soup = BeautifulSoup(resp.text, "html.parser")
         cards = soup.select("li.product-base")
         print(f"[DEBUG] Myntra: Found {len(cards)} cards")
