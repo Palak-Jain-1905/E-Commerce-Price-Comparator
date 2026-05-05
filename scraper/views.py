@@ -608,6 +608,9 @@ def upsert_product_offer_from_row(row: dict) -> Product:
     title = row.get("product") or "Unnamed product"
     p, _  = Product.objects.get_or_create(title=title)
     try:
+        image = row.get("amazon_image", "")
+        if image:
+            p.image_url = image
         p.save()
     except Exception:
         logger.exception("Error saving Product")
