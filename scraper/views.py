@@ -357,7 +357,7 @@ def get_flipkart_prices(driver, query):
 
 def get_meesho_prices(driver, query):
     url = f"https://www.meesho.com/search?q={query}"
-    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Meesho (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
@@ -392,7 +392,7 @@ def get_meesho_prices(driver, query):
 
 def get_myntra_prices(driver, query):
     url = f"https://www.myntra.com/{query}"
-    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Myntra (ScraperAPI): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
     try:
