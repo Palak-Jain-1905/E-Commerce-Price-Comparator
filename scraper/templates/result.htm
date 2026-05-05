@@ -383,20 +383,27 @@ div.dt-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
 
           <!-- AMAZON -->
           <!-- AMAZON -->
+<!-- AMAZON -->
 <td class="sc" data-s="amazon">
   {% if c.amazon_price and c.amazon_price != "None" %}
     <div class="pc">
       {% if c.amazon_image %}
-      <img src="{{ c.amazon_image }}" alt="{{ c.product }}" 
+      <img src="{{ c.amazon_image }}" alt="product" 
            style="width:70px;height:70px;object-fit:contain;border-radius:8px;margin-bottom:6px;background:#fff;padding:4px;">
       {% endif %}
-      <div class="pc-price">{{ c.amazon_price }}</div>
-                {% if c.amazon_discount and c.amazon_discount != "No discount" %}<div class="pc-disc">{{ c.amazon_discount }}</div>{% endif %}
-                {% if c.amazon_reviews and c.amazon_reviews != "No reviews" and "reviews" in c.amazon_reviews %}<div class="pc-rev">{{ c.amazon_reviews }}</div>{% endif %}
-                {% if c.amazon_link %}<a href="{{ c.amazon_link }}" target="_blank" rel="noopener" class="pc-btn pc-btn-amazon">View →</a>{% endif %}
-              </div>
-            {% else %}<span class="pc-none">—</span>{% endif %}
-          </td>
+      <div class="pc-price">₹{{ c.amazon_price }}</div>
+      {% if c.amazon_discount and c.amazon_discount != "No discount" %}
+        <div class="pc-disc">{{ c.amazon_discount }}</div>
+      {% endif %}
+      {% if c.amazon_rating and c.amazon_rating > 0 %}
+  <div class="pc-rev">⭐ {{ c.amazon_rating }}</div>
+{% endif %}
+      {% if c.amazon_link %}
+        <a href="{{ c.amazon_link }}" target="_blank" rel="noopener" class="pc-btn pc-btn-amazon">View →</a>
+      {% endif %}
+    </div>
+  {% else %}<span class="pc-none">—</span>{% endif %}
+</td>
 
           <!-- FLIPKART -->
           <td class="sc" data-s="flipkart">
