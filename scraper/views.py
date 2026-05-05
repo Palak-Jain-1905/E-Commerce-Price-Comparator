@@ -860,10 +860,38 @@ def add_watch(request, slug):
                     "email_alert":   email,
                 }
             )
+            # Alert save hote hi confirmation email bhejo
+            if email:
+                from django.core.mail import send_mail
+                cheapest = Offer.objects.filter(
+                    product=product, price__isnull=False
+                ).order_by('price').first()
+                
+                current_price = f"₹{cheapest.price}" if cheapest else "N/A"
+                store = cheapest.store.capitalize() if cheapest else "N/A"
+                
+                send_mail(
+                    subject=f'🔔 Price Alert Set! {product.title[:40]}',
+                    message=f'''
+Namaste! Aapka price alert set ho gaya hai.
+
+Product: {product.title}
+Target Price: ₹{target}
+Current Best Price: {current_price} on {store}
+Product Link: https://e-commerce-price-comparator-production.up.railway.app/p/{product.slug}/
+
+Jab bhi price aapke target se kam hoga, hum aapko notify karenge!
+
+- PriceMatchX Team
+                    ''',
+                    from_email='palakjain87654@gmail.com',
+                    recipient_list=[email],
+                    fail_silently=True,
+                )
+                print(f"[ALERT] Confirmation email sent to {email}")
         except Exception:
             logger.exception("Wishlist save failed")
     return redirect("product_detail", slug=slug)
-
 
 def remove_watch(request, slug):
     if not request.user.is_authenticated:
