@@ -209,7 +209,7 @@ def get_amazon_prices(driver, query):
         print(f"[DEBUG] Amazon: Status = {resp.status_code}")
 
         if resp.status_code != 200:
-            return prices, reviews, discounts, links
+            return prices, reviews, discounts, links, images, ratings
 
         soup = BeautifulSoup(resp.text, "html.parser")
         items = soup.select("div[data-component-type='s-search-result']")
