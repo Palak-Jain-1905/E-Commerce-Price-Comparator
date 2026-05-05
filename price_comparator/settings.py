@@ -105,13 +105,15 @@ if IS_RAILWAY:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'palakjain87654@gmail.com'
+# ------------------- Email Settings -------------------
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = 'palakjain87654@gmail.com'
 EMAIL_HOST_PASSWORD = 'mpqrmwouuajkjpmp'
-DEFAULT_FROM_EMAIL = 'PriceMatchX <palakjain87654@gmail.com>'
+DEFAULT_FROM_EMAIL  = 'PriceMatchX <palakjain87654@gmail.com>'
+EMAIL_TIMEOUT       = 10  # 10 second mein fail — Gunicorn timeout nahi hoga
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
