@@ -196,11 +196,9 @@ def similar(a: str, b: str) -> float:
 # ------------------- Site scrapers -------------------
 
 def get_amazon_prices(driver, query):
-    """Amazon scraper using requests + BeautifulSoup (avoids Selenium bot detection)"""
     url = f"https://www.amazon.in/s?k={query}&ref=nb_sb_noss"
     print(f"\n[DEBUG] Amazon (requests): Loading {url}")
-
-    prices, reviews, discounts, links = {}, {}, {}, {}
+    prices, reviews, discounts, links, images, ratings = {}, {}, {}, {}, {}, {}
 
     try:
         headers = random.choice(AMAZON_HEADERS_LIST)
@@ -211,14 +209,14 @@ def get_amazon_prices(driver, query):
         print(f"[DEBUG] Amazon: Status = {resp.status_code}")
 
         if resp.status_code != 200:
-            print(f"[DEBUG] Amazon: Blocked ({resp.status_code})")
             return prices, reviews, discounts, links
 
         soup = BeautifulSoup(resp.text, "html.parser")
         items = soup.select("div[data-component-type='s-search-result']")
         print(f"[DEBUG] Amazon: Found {len(items)} items in HTML")
 
-        for item in items[:MAX_ITEMS]:
+        products = []
+        for item in items:
             try:
                 title_el = item.select_one("h2 span") or item.select_one("span.a-text-normal")
                 if not title_el:
@@ -229,6 +227,7 @@ def get_amazon_prices(driver, query):
                 if len(title) > 100:
                     title = title[:100] + "..."
 
+                # Price
                 price = None
                 price_el = item.select_one("span.a-price-whole")
                 if price_el:
@@ -238,15 +237,40 @@ def get_amazon_prices(driver, query):
                     if price_el:
                         price = safe_int(price_el.get_text(strip=True))
 
+                # Link
                 link = "#"
                 a_el = item.select_one("a.a-link-normal")
                 if a_el and a_el.get("href"):
                     href = a_el["href"]
                     link = f"https://www.amazon.in{href}" if href.startswith("/") else href
 
-                rating_el = item.select_one("span.a-icon-alt")
-                reviews[title] = rating_el.get_text(strip=True).split()[0] if rating_el else "No reviews"
+                # Image
+                image = ""
+                img_el = item.select_one("img.s-image")
+                if img_el:
+                    image = img_el.get("src", "")
 
+                # Rating (numeric)
+                rating_val = 0.0
+                rating_el = item.select_one("span.a-icon-alt")
+                rating_text = "No reviews"
+                if rating_el:
+                    rating_text = rating_el.get_text(strip=True).split()[0]
+                    try:
+                        rating_val = float(rating_text)
+                    except:
+                        rating_val = 0.0
+
+                # Review count
+                review_count = 0
+                review_el = item.select_one("span.a-size-base.s-underline-text")
+                if review_el:
+                    try:
+                        review_count = int(review_el.get_text(strip=True).replace(",", ""))
+                    except:
+                        review_count = 0
+
+                # Discount
                 discount_text = "No discount"
                 for span in item.select("span"):
                     t = span.get_text(strip=True).lower()
@@ -254,18 +278,38 @@ def get_amazon_prices(driver, query):
                         discount_text = span.get_text(strip=True)
                         break
 
-                prices[title]    = price
-                discounts[title] = discount_text
-                links[title]     = link
+                products.append({
+                    "title": title,
+                    "price": price,
+                    "link": link,
+                    "image": image,
+                    "rating_text": rating_text,
+                    "rating_val": rating_val,
+                    "review_count": review_count,
+                    "discount": discount_text,
+                })
 
             except Exception:
                 continue
+
+        # Sort by rating first, then review count
+        products.sort(key=lambda x: (x["rating_val"], x["review_count"]), reverse=True)
+
+        # Take top MAX_ITEMS
+        for prod in products[:MAX_ITEMS]:
+            t = prod["title"]
+            prices[t]    = prod["price"]
+            reviews[t]   = prod["rating_text"]
+            discounts[t] = prod["discount"]
+            links[t]     = prod["link"]
+            images[t]    = prod["image"]
+            ratings[t]   = prod["rating_val"]
 
     except Exception as e:
         print(f"[DEBUG] Amazon requests failed: {e}")
 
     print(f"[DEBUG] Amazon: Scraped {len(prices)} items")
-    return prices, reviews, discounts, links
+    return prices, reviews, discounts, links, images, ratings
 
 
 SCRAPER_API_KEY = "30040d9479b6720981bba90a5f7fa256"
@@ -594,7 +638,7 @@ def compare_prices(request):
 
     try:
     # Amazon uses requests (Railway pe bhi chalega)
-        amazon_prices, amazon_reviews, amazon_discounts, amazon_links = get_amazon_prices(None, query)
+        amazon_prices, amazon_reviews, amazon_discounts, amazon_links, amazon_images, amazon_ratings = get_amazon_prices(None, query)
 
         # Flipkart, Meesho, Myntra sirf local pe (Selenium chahiye)
         if driver:
@@ -644,6 +688,8 @@ def compare_prices(request):
         row.setdefault("myntra_link",       myntra_links.get(prod))
         row.setdefault("myntra_discount",   myntra_discounts.get(prod, "No discount"))
         row.setdefault("myntra_reviews",    myntra_reviews.get(prod, "No reviews"))
+        row.setdefault("amazon_image",  amazon_images.get(prod, ""))
+        row.setdefault("amazon_rating", amazon_ratings.get(prod, 0))
 
     for row in comparisons:
         try:
