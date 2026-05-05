@@ -299,7 +299,7 @@ def get_amazon_prices(driver, query):
         for prod in products[:MAX_ITEMS]:
             t = prod["title"]
             prices[t]    = prod["price"]
-            reviews[t]   = prod["rating_text"]
+            reviews[t] = f"⭐ {prod['rating_val']} ({prod['review_count']:,} reviews)" if prod['rating_val'] > 0 else "No reviews"
             discounts[t] = prod["discount"]
             links[t]     = prod["link"]
             images[t]    = prod["image"]
