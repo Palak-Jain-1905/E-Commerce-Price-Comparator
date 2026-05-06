@@ -37,7 +37,7 @@ from .models import Product, Offer, PriceHistory, SearchLog, LoginActivity, Resu
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-MAX_ITEMS         = 12
+MAX_ITEMS = 50
 PAGE_LOAD_TIMEOUT = 25
 SHORT_WAIT        = (1.2, 2.8)
 FUZZY_THRESHOLD   = 0.52
