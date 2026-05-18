@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-%$l3g@3trc)%p(9_38^5r*+^gyobleax4$qe1$!7=b3l7$oh$@'
@@ -105,7 +106,7 @@ if IS_RAILWAY:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-GEMINI_API_KEY = 'AIzaSyAI-9WrLb6dQ7ZnjOGlKG14hDLsswzYO_k'
+
 
 # ------------------- Email Settings -------------------
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
