@@ -306,7 +306,7 @@ def get_amazon_prices(driver, query):
 # ------------------- Gemini AI Scraper -------------------
 
 SCRAPER_API_KEY = "30040d9479b6720981bba90a5f7fa256"
-GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY", "AIzaSyAI-9WrLb6dQ7ZnjOGlKG14hDLsswzYO_k")
+GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY", "")
 
 
 def ai_extract_products_gemini(html: str, site_name: str, query: str) -> list:
