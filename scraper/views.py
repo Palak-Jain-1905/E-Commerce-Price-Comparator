@@ -335,7 +335,7 @@ def ai_extract_products_gemini(html: str, site_name: str, query: str) -> list:
 
     try:
         response = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}",
             headers={"Content-Type": "application/json"},
             json={
                 "contents": [{"parts": [{"text": prompt}]}],
@@ -345,7 +345,7 @@ def ai_extract_products_gemini(html: str, site_name: str, query: str) -> list:
         )
 
         if response.status_code != 200:
-            print(f"[AI] Gemini error {response.status_code}: {response.text[:300]}")
+            print(f"[AI] Gemini error {response.status_code} - Rate limited, using fallback: {response.text[:300]}")
             return []
 
         text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -367,6 +367,74 @@ def ai_extract_products_gemini(html: str, site_name: str, query: str) -> list:
 # ------------------- Flipkart (Gemini AI) -------------------
 
 def get_flipkart_prices(driver, query):
+    url         = f"https://www.flipkart.com/search?q={requests.utils.quote(query)}"
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
+    print(f"\n[DEBUG] Flipkart (ScraperAPI + Gemini): Loading")
+    prices, reviews, discounts, links = {}, {}, {}, {}
+
+    try:
+        resp = requests.get(scraper_url, timeout=PAGE_LOAD_TIMEOUT)
+        
+        # Pehle Gemini try karo
+        products = ai_extract_products_gemini(resp.text, "Flipkart", query)
+
+        if not products:
+            # Fallback — old selector method
+            print(f"[DEBUG] Flipkart: Gemini failed, using selector fallback")
+            soup = BeautifulSoup(resp.text, "html.parser")
+            cards = soup.select("div[data-id]")
+            for card in cards[:MAX_ITEMS]:
+                try:
+                    title_el = card.select_one("a[title]") or card.select_one("img[alt]")
+                    if not title_el:
+                        continue
+                    title = (title_el.get("title") or title_el.get("alt", "")).strip()
+                    if not title or is_fake_title(title):
+                        continue
+                    price_el = card.select_one("div.hZ3P6w") or card.select_one("div.Nx9bqj")
+                    price = safe_int(price_el.get_text(strip=True)) if price_el else None
+                    if not price:
+                        continue
+                    discount = "No discount"
+                    for el in card.find_all(True):
+                        t = el.get_text(strip=True)
+                        if "%" in t and "off" in t and len(t) < 15:
+                            discount = t
+                            break
+                    link_el = card.select_one("a")
+                    href = link_el.get("href", "#") if link_el else "#"
+                    link = f"https://www.flipkart.com{href}" if href.startswith("/") else href
+                    prices[title]    = price
+                    links[title]     = link
+                    discounts[title] = discount
+                    reviews[title]   = "No reviews"
+                except Exception:
+                    continue
+        else:
+            for p in products[:MAX_ITEMS]:
+                try:
+                    title    = str(p.get("title", "")).strip()
+                    price    = safe_int(str(p.get("price", "0")))
+                    link     = str(p.get("link", "")).strip()
+                    discount = str(p.get("discount", "No discount")).strip()
+                    if not title or is_fake_title(title):
+                        continue
+                    if not price or price <= 0:
+                        continue
+                    if not link.startswith("http"):
+                        link = "https://www.flipkart.com" + link
+                    prices[title]    = price
+                    links[title]     = link
+                    discounts[title] = discount
+                    reviews[title]   = "No reviews"
+                except Exception:
+                    continue
+
+    except Exception as e:
+        print(f"[DEBUG] Flipkart ScraperAPI failed: {e}")
+
+    print(f"[DEBUG] Flipkart: Scraped {len(prices)} items")
+    return prices, reviews, discounts, links
     url         = f"https://www.flipkart.com/search?q={requests.utils.quote(query)}"
     scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Flipkart (ScraperAPI + Gemini): Loading")
