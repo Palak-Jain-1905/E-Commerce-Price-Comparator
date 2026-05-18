@@ -8,11 +8,12 @@ import mimetypes
 import time
 import random
 import logging
+import json
+import os
 from difflib import SequenceMatcher
 from decimal import Decimal
 import requests
 from bs4 import BeautifulSoup
-import json
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import FileResponse, Http404, JsonResponse
@@ -37,7 +38,7 @@ from .models import Product, Offer, PriceHistory, SearchLog, LoginActivity, Resu
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-MAX_ITEMS = 50
+MAX_ITEMS         = 50
 PAGE_LOAD_TIMEOUT = 25
 SHORT_WAIT        = (1.2, 2.8)
 FUZZY_THRESHOLD   = 0.52
@@ -95,7 +96,6 @@ def is_fake_title(title):
 
 
 def get_driver(headless=False, disable_images=False):
-    import os
     chrome_options = Options()
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--disable-gpu")
@@ -126,12 +126,10 @@ def get_driver(headless=False, disable_images=False):
                     chromium_path = subprocess.check_output(['which', 'chromium-browser']).decode().strip()
                 except:
                     chromium_path = '/usr/bin/chromium'
-            
             try:
                 chromedriver_path = subprocess.check_output(['which', 'chromedriver']).decode().strip()
             except:
                 chromedriver_path = '/usr/bin/chromedriver'
-            
             chrome_options.binary_location = chromium_path
             service = Service(chromedriver_path)
         else:
@@ -228,7 +226,6 @@ def get_amazon_prices(driver, query):
                 if len(title) > 100:
                     title = title[:100] + "..."
 
-                # Price
                 price = None
                 price_el = item.select_one("span.a-price-whole")
                 if price_el:
@@ -238,20 +235,17 @@ def get_amazon_prices(driver, query):
                     if price_el:
                         price = safe_int(price_el.get_text(strip=True))
 
-                # Link
                 link = "#"
                 a_el = item.select_one("a.a-link-normal")
                 if a_el and a_el.get("href"):
                     href = a_el["href"]
                     link = f"https://www.amazon.in{href}" if href.startswith("/") else href
 
-                # Image
                 image = ""
                 img_el = item.select_one("img.s-image")
                 if img_el:
                     image = img_el.get("src", "")
 
-                # Rating (numeric)
                 rating_val = 0.0
                 rating_el = item.select_one("span.a-icon-alt")
                 rating_text = "No reviews"
@@ -262,7 +256,6 @@ def get_amazon_prices(driver, query):
                     except:
                         rating_val = 0.0
 
-                # Review count
                 review_count = 0
                 review_el = item.select_one("span.a-size-base.s-underline-text")
                 if review_el:
@@ -271,7 +264,6 @@ def get_amazon_prices(driver, query):
                     except:
                         review_count = 0
 
-                # Discount
                 discount_text = "No discount"
                 for span in item.select("span"):
                     t = span.get_text(strip=True).lower()
@@ -293,14 +285,12 @@ def get_amazon_prices(driver, query):
             except Exception:
                 continue
 
-        # Sort by rating first, then review count
         products.sort(key=lambda x: (x["rating_val"], x["review_count"]), reverse=True)
 
-        # Take top MAX_ITEMS
         for prod in products[:MAX_ITEMS]:
             t = prod["title"]
             prices[t]    = prod["price"]
-            reviews[t] = f"⭐ {prod['rating_val']} ({prod['review_count']:,} reviews)" if prod['rating_val'] > 0 else "No reviews"
+            reviews[t]   = f"⭐ {prod['rating_val']} ({prod['review_count']:,} reviews)" if prod['rating_val'] > 0 else "No reviews"
             discounts[t] = prod["discount"]
             links[t]     = prod["link"]
             images[t]    = prod["image"]
@@ -313,94 +303,166 @@ def get_amazon_prices(driver, query):
     return prices, reviews, discounts, links, images, ratings
 
 
+# ------------------- Gemini AI Scraper -------------------
+
 SCRAPER_API_KEY = "30040d9479b6720981bba90a5f7fa256"
+GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY", "AIzaSyB0fM1Eet3aWDnYsrmgR32Y4p0HB1-19m8")
+
+
+def ai_extract_products_gemini(html: str, site_name: str, query: str) -> list:
+    """Gemini API se products extract karo — koi hardcoded selector nahi"""
+
+    if not GEMINI_API_KEY:
+        print(f"[AI] No GEMINI_API_KEY found!")
+        return []
+
+    # HTML clean karo — scripts/styles hata do
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "head", "nav", "footer", "svg"]):
+        tag.decompose()
+    clean_html = str(soup)[:20000]  # 20KB limit
+
+    domain = "https://www.flipkart.com" if "Flipkart" in site_name else "https://www.meesho.com"
+
+    prompt = (
+        f'Extract ALL products from this {site_name} search page HTML for query "{query}". '
+        f'Return ONLY a valid JSON array. Each object must have: '
+        f'title (string), price (integer INR, no symbols or commas), '
+        f'link (full URL starting with {domain}), discount (string or "No discount"). '
+        f'Return ONLY the JSON array — no explanation, no markdown, no code blocks. '
+        f'HTML:\n{clean_html}'
+    )
+
+    try:
+        response = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}",
+            headers={"Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 3000}
+            },
+            timeout=30
+        )
+
+        if response.status_code != 200:
+            print(f"[AI] Gemini error {response.status_code}: {response.text[:300]}")
+            return []
+
+        text = response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+        # JSON backticks hata do agar hon
+        text = text.replace("```json", "").replace("```", "").strip()
+
+        products = json.loads(text)
+        print(f"[AI] {site_name}: {len(products)} products via Gemini")
+        return products if isinstance(products, list) else []
+
+    except json.JSONDecodeError as e:
+        print(f"[AI] JSON parse error for {site_name}: {e}")
+        return []
+    except Exception as e:
+        print(f"[AI] Gemini error for {site_name}: {e}")
+        return []
+
+
+# ------------------- Flipkart (Gemini AI) -------------------
 
 def get_flipkart_prices(driver, query):
-    url = f"https://www.flipkart.com/search?q={query}"
+    url         = f"https://www.flipkart.com/search?q={requests.utils.quote(query)}"
     scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
-    print(f"\n[DEBUG] Flipkart (ScraperAPI): Loading")
+    print(f"\n[DEBUG] Flipkart (ScraperAPI + Gemini): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
+
     try:
-        resp = requests.get(scraper_url, timeout=25)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        cards = soup.select("div[data-id]")
-        print(f"[DEBUG] Flipkart: Found {len(cards)} cards")
-        for card in cards[:MAX_ITEMS]:
+        resp     = requests.get(scraper_url, timeout=PAGE_LOAD_TIMEOUT)
+        products = ai_extract_products_gemini(resp.text, "Flipkart", query)
+
+        count = 0
+        for p in products[:MAX_ITEMS]:
             try:
-                title_el = card.select_one("a[title]")
-                if not title_el:
-                    continue
-                title = title_el.get("title", "").strip()
+                title    = str(p.get("title", "")).strip()
+                price    = safe_int(str(p.get("price", "0")))
+                link     = str(p.get("link", "")).strip()
+                discount = str(p.get("discount", "No discount")).strip()
+
                 if not title or is_fake_title(title):
                     continue
-                price_el = card.select_one("div.hZ3P6w")
-                price = safe_int(price_el.get_text(strip=True)) if price_el else None
-                discount = "No discount"
-                for el in card.find_all(True):
-                    t = el.get_text(strip=True)
-                    if "%" in t and "off" in t and len(t) < 15:
-                        discount = t
-                        break
-                link_el = card.select_one("a")
-                href = link_el.get("href", "#") if link_el else "#"
-                link = f"https://www.flipkart.com{href}" if href.startswith("/") else href
-                prices[title] = price
-                links[title] = link
+                if not price or price <= 0:
+                    continue
+                if not link.startswith("http"):
+                    link = "https://www.flipkart.com" + link
+
+                prices[title]    = price
+                links[title]     = link
                 discounts[title] = discount
-                reviews[title] = "No reviews"
+                reviews[title]   = "No reviews"
+                count += 1
             except Exception:
                 continue
+
+        print(f"[DEBUG] Flipkart: Scraped {count} items")
+
     except Exception as e:
         print(f"[DEBUG] Flipkart ScraperAPI failed: {e}")
-    print(f"[DEBUG] Flipkart: Scraped {len(prices)} items")
+
     return prices, reviews, discounts, links
 
+
+# ------------------- Meesho (Gemini AI) -------------------
 
 def get_meesho_prices(driver, query):
-    url = f"https://www.meesho.com/search?q={query}"
-    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
-    print(f"\n[DEBUG] Meesho (ScraperAPI): Loading")
+    url         = f"https://www.meesho.com/search?q={requests.utils.quote(query)}"
+    # render=true use karo — Meesho JavaScript-heavy hai
+    scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}&render=true"
+    print(f"\n[DEBUG] Meesho (ScraperAPI + Gemini): Loading")
     prices, reviews, discounts, links = {}, {}, {}, {}
+
     try:
-        resp = requests.get(scraper_url, timeout=25)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        cards = soup.select("div.sc-bqiRlB, div.NewProductCardstyled__CardStyled-sc-6y2tys-0")
-        print(f"[DEBUG] Meesho: Found {len(cards)} cards")
-        for card in cards[:MAX_ITEMS]:
+        resp     = requests.get(scraper_url, timeout=35)
+        products = ai_extract_products_gemini(resp.text, "Meesho", query)
+
+        count = 0
+        for p in products[:MAX_ITEMS]:
             try:
-                title_el = card.select_one("p, h3")
-                if not title_el:
-                    continue
-                title = title_el.get_text(strip=True)
+                title    = str(p.get("title", "")).strip()
+                price    = safe_int(str(p.get("price", "0")))
+                link     = str(p.get("link", "")).strip()
+                discount = str(p.get("discount", "No discount")).strip()
+
                 if not title or is_fake_title(title):
                     continue
-                price_el = card.select_one("h5, span.price")
-                price = safe_int(price_el.get_text(strip=True)) if price_el else None
-                link_el = card.select_one("a")
-                href = link_el.get("href", "#") if link_el else "#"
-                link = f"https://www.meesho.com{href}" if href.startswith("/") else href
-                prices[title] = price
-                links[title] = link
-                discounts[title] = "No discount"
-                reviews[title] = "No reviews"
+                if not price or price <= 0:
+                    continue
+                if not link.startswith("http"):
+                    link = "https://www.meesho.com" + link
+
+                prices[title]    = price
+                links[title]     = link
+                discounts[title] = discount
+                reviews[title]   = "No reviews"
+                count += 1
             except Exception:
                 continue
+
+        print(f"[DEBUG] Meesho: Scraped {count} items")
+
     except Exception as e:
         print(f"[DEBUG] Meesho ScraperAPI failed: {e}")
-    print(f"[DEBUG] Meesho: Scraped {len(prices)} items")
+
     return prices, reviews, discounts, links
 
 
+# ------------------- Myntra -------------------
+
 def get_myntra_prices(driver, query):
-    url = f"https://www.myntra.com/{query}"
+    url         = f"https://www.myntra.com/{query}"
     scraper_url = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={url}"
     print(f"\n[DEBUG] Myntra (ScraperAPI): Loading")
     prices, reviews, discounts, links, images = {}, {}, {}, {}, {}
+
     try:
         resp = requests.get(scraper_url, timeout=25)
-        raw = resp.text
+        raw  = resp.text
 
-        # window.__myx JSON extract karo
         idx = raw.find('window.__myx = {')
         if idx == -1:
             print("[DEBUG] Myntra: window.__myx not found")
@@ -408,7 +470,7 @@ def get_myntra_prices(driver, query):
 
         start = idx + len('window.__myx = ')
         depth = 0
-        end = start
+        end   = start
         for i in range(start, len(raw)):
             ch = raw[i]
             if ch == '{':
@@ -419,7 +481,7 @@ def get_myntra_prices(driver, query):
                     end = i + 1
                     break
 
-        data = json.loads(raw[start:end])
+        data     = json.loads(raw[start:end])
         products = data.get('searchData', {}).get('results', {}).get('products', [])
         print(f"[DEBUG] Myntra: Found {len(products)} products")
 
@@ -429,24 +491,19 @@ def get_myntra_prices(driver, query):
                 if not title or is_fake_title(title):
                     continue
 
-                price = p.get('price')
-                mrp = p.get('mrp')
+                price        = p.get('price')
                 discount_amt = p.get('discount', 0)
-                discount = f"Rs. {discount_amt} OFF" if discount_amt else "No discount"
-
-                slug = p.get('landingPageUrl', '')
-                link = f"https://www.myntra.com/{slug}" if slug else "#"
-
-                image = p.get('searchImage', '')
-
-                rating = p.get('rating', 0)
+                discount     = f"Rs. {discount_amt} OFF" if discount_amt else "No discount"
+                slug         = p.get('landingPageUrl', '')
+                link         = f"https://www.myntra.com/{slug}" if slug else "#"
+                rating       = p.get('rating', 0)
                 rating_count = p.get('ratingCount', 0)
-                review = f"⭐ {round(rating,1)} ({rating_count:,} reviews)" if rating else "No reviews"
+                review       = f"⭐ {round(rating,1)} ({rating_count:,} reviews)" if rating else "No reviews"
 
-                prices[title]   = price
+                prices[title]    = price
                 discounts[title] = discount
-                links[title]    = link
-                reviews[title]  = review
+                links[title]     = link
+                reviews[title]   = review
 
             except Exception:
                 continue
@@ -668,14 +725,9 @@ def compare_prices(request):
 
     print(f"\n{'='*60}\n[DEBUG] Search: '{query}'\n{'='*60}")
 
-    import os
-    driver = None
-
     try:
-    # Amazon uses requests (Railway pe bhi chalega)
         amazon_prices, amazon_reviews, amazon_discounts, amazon_links, amazon_images, amazon_ratings = get_amazon_prices(None, query)
 
-        # Flipkart, Meesho, Myntra sirf local pe (Selenium chahiye)
         rand_sleep()
         flipkart_prices, flipkart_reviews, flipkart_discounts, flipkart_links = get_flipkart_prices(None, query)
         rand_sleep()
@@ -685,8 +737,6 @@ def compare_prices(request):
     except Exception as e:
         logger.exception("Scraping error: %s", e)
         return render(request, "index.htm", {"error": "Scrape failed. Check server logs."})
-    finally:
-        pass
 
     print(f"\n[DEBUG] TOTAL — Amazon:{len(amazon_prices)} Flipkart:{len(flipkart_prices)} Meesho:{len(meesho_prices)} Myntra:{len(myntra_prices)}")
 
@@ -714,8 +764,8 @@ def compare_prices(request):
         row.setdefault("myntra_link",       myntra_links.get(prod))
         row.setdefault("myntra_discount",   myntra_discounts.get(prod, "No discount"))
         row.setdefault("myntra_reviews",    myntra_reviews.get(prod, "No reviews"))
-        row.setdefault("amazon_image",  amazon_images.get(prod, ""))
-        row.setdefault("amazon_rating", amazon_ratings.get(prod, 0))
+        row.setdefault("amazon_image",      amazon_images.get(prod, ""))
+        row.setdefault("amazon_rating",     amazon_ratings.get(prod, 0))
 
     for row in comparisons:
         try:
@@ -860,10 +910,8 @@ def add_watch(request, slug):
                     "email_alert":   email,
                 }
             )
-            # Alert save hote hi confirmation email bhejo
             if email:
                 from django.core.mail import send_mail
-                from threading import Thread
 
                 cheapest = Offer.objects.filter(
                     product=product, price__isnull=False
@@ -884,18 +932,16 @@ Jab bhi price aapke target se kam hoga, hum aapko notify karenge!
 
 - PriceMatchX Team'''
 
-                def _send(to_email, subj, msg):
-                    try:
-                        send_mail(subj, msg, 'palakjain87654@gmail.com', [to_email], fail_silently=True)
-                        print(f"[ALERT] Confirmation email sent to {to_email}")
-                    except Exception as e:
-                        print(f"[ALERT ERROR] {e}")
-
-                Thread(target=_send, args=(email, subject, message), daemon=True).start()
+                try:
+                    send_mail(subject, message, 'palakjain87654@gmail.com', [email], fail_silently=False)
+                    print(f"[ALERT] Confirmation email sent to {email}")
+                except Exception as e:
+                    print(f"[ALERT ERROR] Email send failed: {e}")
 
         except Exception:
             logger.exception("Wishlist save failed")
     return redirect("product_detail", slug=slug)
+
 
 def remove_watch(request, slug):
     if not request.user.is_authenticated:
@@ -928,6 +974,7 @@ def profile_view(request):
         'wishlist': wishlist,
         'history': history
     })
+
 
 # ------------------- Cart & Order views -------------------
 
@@ -1004,6 +1051,7 @@ def order_history(request):
     return render(request, 'order_history.html', {'orders': orders})
 
 
+# ------------------- Price Alert -------------------
 
 from django.core.mail import send_mail
 
@@ -1014,29 +1062,28 @@ def check_price_alerts():
         target_price__isnull=False,
         email_alert__isnull=False
     ).select_related('product', 'user')
-    
+
     for alert in alerts:
         try:
             cheapest_offer = Offer.objects.filter(
                 product=alert.product,
                 price__isnull=False
             ).order_by('price').first()
-            
+
             if not cheapest_offer:
                 continue
-                
+
             if cheapest_offer.price <= alert.target_price:
                 send_mail(
                     subject=f'🎉 Price Drop Alert! {alert.product.title[:40]}',
-                    message=f'''
-price alert!
+                    message=f'''Price Alert!
 
 Product: {alert.product.title}
 Target Price: ₹{alert.target_price}
 Current Price: ₹{cheapest_offer.price} on {cheapest_offer.store.capitalize()}
 Link: {cheapest_offer.url}
 
-PriceMatchX pe dekho: http://127.0.0.1:8000/p/{alert.product.slug}/
+PriceMatchX pe dekho: https://e-commerce-price-comparator-production.up.railway.app/p/{alert.product.slug}/
                     ''',
                     from_email='palakjain87654@gmail.com',
                     recipient_list=[alert.email_alert],
@@ -1045,6 +1092,8 @@ PriceMatchX pe dekho: http://127.0.0.1:8000/p/{alert.product.slug}/
                 print(f"[ALERT] Email sent to {alert.email_alert} for {alert.product.title}")
         except Exception as e:
             print(f"[ALERT ERROR] {e}")
+
+
 def run_price_alerts(request):
     check_price_alerts()
     return JsonResponse({"status": "done", "message": "Alerts checked!"})

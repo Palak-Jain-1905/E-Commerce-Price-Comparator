@@ -77,11 +77,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'pricematchx',
+            'NAME': 'railway',
             'USER': 'root',
-            'PASSWORD': 'Admin1234@',
-            'HOST': '127.0.0.1',
-            'PORT': '8080',
+            'PASSWORD': 'trYYJTDKFFnYmgtWuaYHGCTzJkDbrQph',
+            'HOST': 'trolley.proxy.rlwy.net',
+            'PORT': '52198',
         }
     }
 
@@ -113,9 +113,8 @@ EMAIL_USE_TLS       = True
 EMAIL_HOST_USER     = 'palakjain87654@gmail.com'
 EMAIL_HOST_PASSWORD = 'akaiuwonnreepqgj'
 DEFAULT_FROM_EMAIL  = 'PriceMatchX <palakjain87654@gmail.com>'
-EMAIL_TIMEOUT       = 10  # 10 second mein fail — Gunicorn timeout nahi hoga
+EMAIL_TIMEOUT       = 10
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
-
